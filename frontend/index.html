@@ -17,7 +17,6 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    /* ── RESET & ROOT ──────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -38,206 +37,79 @@
       --gap:        18px;
     }
 
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font-body);
-      font-size: 16px;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
 
-    /* ── ANIMATED BACKGROUND ────────────────────────────────────────────────── */
     body::before {
-      content: '';
-      position: fixed; inset: 0; z-index: 0;
-      background-image:
-        linear-gradient(rgba(0,212,255,0.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,212,255,0.035) 1px, transparent 1px);
-      background-size: 48px 48px;
-      animation: gridScroll 25s linear infinite;
+      content: ''; position: fixed; inset: 0; z-index: 0;
+      background-image: linear-gradient(rgba(0,212,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.035) 1px, transparent 1px);
+      background-size: 48px 48px; animation: gridScroll 25s linear infinite;
     }
-    @keyframes gridScroll { from { background-position: 0 0; } to { background-position: 48px 48px; } }
+    @keyframes gridScroll { from{background-position:0 0} to{background-position:48px 48px} }
+    body::after { content: ''; position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse 80% 50% at 50% -5%, rgba(0,212,255,0.1) 0%, transparent 70%); pointer-events: none; }
 
-    body::after {
-      content: '';
-      position: fixed; inset: 0; z-index: 0;
-      background: radial-gradient(ellipse 80% 50% at 50% -5%, rgba(0,212,255,0.1) 0%, transparent 70%);
-      pointer-events: none;
-    }
+    #app { position: relative; z-index: 1; min-height: 100dvh; display: flex; flex-direction: column; width: 100%; max-width: 1400px; margin: 0 auto; padding: env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0); }
 
-    /* ── LAYOUT SHELL ────────────────────────────────────────────────────────── */
-    #app {
-      position: relative; z-index: 1;
-      min-height: 100dvh;
-      display: flex; flex-direction: column;
-      width: 100%;
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
-    }
-
-    /* ── HEADER ──────────────────────────────────────────────────────────────── */
-    header {
-      display: flex; align-items: center; gap: 16px;
-      padding: 20px 24px 14px;
-    }
-
+    header { display: flex; align-items: center; gap: 16px; padding: 20px 24px 14px; }
     .arc-reactor { width: 52px; height: 52px; position: relative; flex-shrink: 0; }
     .arc-reactor svg { width: 100%; height: 100%; }
     .arc-reactor .outer-ring { fill: none; stroke: var(--cyan); stroke-width: 2; animation: reactorPulse 3s ease-in-out infinite; }
-    .arc-reactor .inner-ring { fill: none; stroke: var(--cyan); stroke-width: 1.5; opacity: 0.6; animation: reactorPulse 3s ease-in-out infinite reverse; }
+    .arc-reactor .inner-ring { fill: none; stroke: var(--cyan); stroke-width: 1.5; opacity: .6; animation: reactorPulse 3s ease-in-out infinite reverse; }
     .arc-reactor .core { fill: var(--cyan); animation: corePulse 3s ease-in-out infinite; }
-    .arc-reactor .spoke { stroke: var(--cyan); stroke-width: 1; opacity: 0.5; }
+    .arc-reactor .spoke { stroke: var(--cyan); stroke-width: 1; opacity: .5; }
     @keyframes reactorPulse { 0%,100%{opacity:1;filter:drop-shadow(0 0 6px var(--cyan-glow))} 50%{opacity:.5;filter:drop-shadow(0 0 2px var(--cyan-glow))} }
     @keyframes corePulse { 0%,100%{fill:var(--cyan);filter:drop-shadow(0 0 8px var(--cyan))} 50%{fill:#fff;filter:drop-shadow(0 0 14px #fff)} }
 
-    .header-text h1 {
-      font-family: var(--font-head);
-      font-size: 24px; font-weight: 900; letter-spacing: 5px;
-      color: var(--cyan);
-      text-shadow: 0 0 24px var(--cyan-glow), 0 0 48px rgba(0,212,255,0.25);
-    }
+    .header-text h1 { font-family: var(--font-head); font-size: 24px; font-weight: 900; letter-spacing: 5px; color: var(--cyan); text-shadow: 0 0 24px var(--cyan-glow), 0 0 48px rgba(0,212,255,0.25); }
     .header-text p { font-size: 11px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-top: 2px; }
-
     .header-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
-
-    .status-dot {
-      width: 11px; height: 11px; border-radius: 50%;
-      background: var(--green);
-      box-shadow: 0 0 8px var(--green), 0 0 16px var(--green);
-      animation: blink 2s ease-in-out infinite;
-    }
+    .status-dot { width: 11px; height: 11px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green), 0 0 16px var(--green); animation: blink 2s ease-in-out infinite; }
     .status-dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); animation: none; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    /* ── SCAN LINE ───────────────────────────────────────────────────────────── */
-    .scan-sep {
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-      margin: 0 24px;
-      position: relative; overflow: visible;
-    }
-    .scan-sep::after {
-      content: ''; position: absolute; top: -2px; left: 0;
-      height: 5px; width: 80px;
-      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-      animation: scanMove 4s linear infinite;
-    }
+    .scan-sep { height: 1px; background: linear-gradient(90deg, transparent, var(--cyan), transparent); margin: 0 24px; position: relative; overflow: visible; }
+    .scan-sep::after { content: ''; position: absolute; top: -2px; left: 0; height: 5px; width: 80px; background: linear-gradient(90deg, transparent, var(--cyan), transparent); animation: scanMove 4s linear infinite; }
     @keyframes scanMove { from{left:-80px} to{left:100%} }
 
-    /* ── NAV TABS ────────────────────────────────────────────────────────────── */
-    nav {
-      display: flex; gap: 4px;
-      padding: 14px 24px 6px;
-    }
-    nav button {
-      flex: 1;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text-dim);
-      font-family: var(--font-head);
-      font-size: 9px; letter-spacing: 1.5px;
-      padding: 9px 4px;
-      cursor: pointer; transition: all 0.2s;
-      text-transform: uppercase;
-    }
-    nav button.active {
-      background: var(--cyan-dim);
-      border-color: var(--cyan);
-      color: var(--cyan);
-      text-shadow: 0 0 8px var(--cyan-glow);
-      box-shadow: 0 0 12px rgba(0,212,255,0.2) inset;
-    }
+    nav { display: flex; gap: 4px; padding: 14px 24px 6px; }
+    nav button { flex: 1; background: transparent; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-dim); font-family: var(--font-head); font-size: 9px; letter-spacing: 1.5px; padding: 9px 4px; cursor: pointer; transition: all .2s; text-transform: uppercase; }
+    nav button.active { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); text-shadow: 0 0 8px var(--cyan-glow); box-shadow: 0 0 12px rgba(0,212,255,0.2) inset; }
     nav button:hover:not(.active) { border-color: rgba(0,212,255,0.4); color: var(--text); }
     nav button#tab-world { color: var(--gold); border-color: rgba(240,165,0,0.3); }
     nav button#tab-world.active { background: rgba(240,165,0,0.12); border-color: var(--gold); color: var(--gold); text-shadow: 0 0 8px rgba(240,165,0,0.6); }
 
-    /* ── PANELS ──────────────────────────────────────────────────────────────── */
     .panel { display: none; flex: 1; padding: var(--gap) 24px 24px; gap: var(--gap); flex-direction: column; }
     .panel.active { display: flex; }
 
-    /* ── GLASS CARDS ─────────────────────────────────────────────────────────── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 18px 20px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      position: relative; overflow: hidden;
-      transition: border-color 0.2s;
-    }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); position: relative; overflow: hidden; transition: border-color .2s; }
     .card:hover { border-color: rgba(0,212,255,0.4); }
-    .card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(0,212,255,0.5), transparent);
-    }
-    .card-label {
-      font-family: var(--font-head);
-      font-size: 9px; letter-spacing: 2.5px;
-      color: var(--text-dim); text-transform: uppercase;
-      margin-bottom: 10px;
-    }
-    .card-value {
-      font-family: var(--font-head);
-      font-size: 28px; font-weight: 700;
-      color: var(--cyan);
-      text-shadow: 0 0 20px var(--cyan-glow);
-    }
+    .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(0,212,255,0.5), transparent); }
+    .card-label { font-family: var(--font-head); font-size: 9px; letter-spacing: 2.5px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 10px; }
+    .card-value { font-family: var(--font-head); font-size: 28px; font-weight: 700; color: var(--cyan); text-shadow: 0 0 20px var(--cyan-glow); }
     .card-sub { font-size: 13px; color: var(--text-dim); margin-top: 5px; }
-
     .card-row { display: flex; gap: var(--gap); }
     .card-row .card { flex: 1; }
 
-    /* ── MARKET LAYOUT ───────────────────────────────────────────────────────── */
-    /* Desktop: Risk Status (top, full) + 2-col grid (MC+CAGR | Alerts) */
     .mkt-grid { display: flex; flex-direction: column; gap: var(--gap); }
-
-    /* ── PORTFOLIO LAYOUT ────────────────────────────────────────────────────── */
     .pf-grid { display: flex; flex-direction: column; gap: var(--gap); flex: 1; }
-    .pf-left  { display: flex; flex-direction: column; gap: var(--gap); }
+    .pf-left { display: flex; flex-direction: column; gap: var(--gap); }
 
-    /* ── RISK BADGE ──────────────────────────────────────────────────────────── */
-    .risk-badge {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 5px 14px; border-radius: 20px;
-      font-family: var(--font-head); font-size: 12px; letter-spacing: 2px; font-weight: 700;
-    }
+    .risk-badge { display: inline-flex; align-items: center; gap: 7px; padding: 5px 14px; border-radius: 20px; font-family: var(--font-head); font-size: 12px; letter-spacing: 2px; font-weight: 700; }
     .risk-badge.green  { background: rgba(0,255,136,0.1); border: 1px solid var(--green); color: var(--green); }
     .risk-badge.yellow { background: rgba(240,165,0,0.1); border: 1px solid var(--gold); color: var(--gold); }
     .risk-badge.red    { background: rgba(255,59,59,0.1); border: 1px solid var(--red); color: var(--red); }
     .risk-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
 
-    /* ── POSITIONS TABLE ─────────────────────────────────────────────────────── */
     .pos-table { width: 100%; border-collapse: collapse; }
-    .pos-table th {
-      font-family: var(--font-head); font-size: 8px; letter-spacing: 2px;
-      color: var(--text-dim); text-transform: uppercase;
-      padding: 7px 6px; border-bottom: 1px solid var(--border); text-align: left;
-    }
+    .pos-table th { font-family: var(--font-head); font-size: 8px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; padding: 7px 6px; border-bottom: 1px solid var(--border); text-align: left; }
     .pos-table td { padding: 10px 6px; font-size: 14px; border-bottom: 1px solid rgba(0,212,255,0.06); }
     .pos-table .sym { font-family: var(--font-head); font-size: 13px; color: var(--cyan); }
     .pos-table .pos { color: var(--green); }
     .pos-table .neg { color: var(--red); }
 
-    /* ── SIGNAL FEED ─────────────────────────────────────────────────────────── */
     .signal-feed { display: flex; flex-direction: column; gap: 8px; }
-    .signal-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 14px;
-      background: rgba(0,18,40,0.6);
-      border: 1px solid var(--border); border-radius: 8px;
-      transition: border-color 0.2s;
-    }
+    .signal-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: rgba(0,18,40,0.6); border: 1px solid var(--border); border-radius: 8px; transition: border-color .2s; }
     .signal-item:hover { border-color: rgba(0,212,255,0.4); }
-    .signal-icon {
-      width: 36px; height: 36px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-family: var(--font-head); font-weight: 700; font-size: 14px; flex-shrink: 0;
-    }
+    .signal-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-head); font-weight: 700; font-size: 14px; flex-shrink: 0; }
     .signal-icon.buy  { background: rgba(0,255,136,0.15); color: var(--green); border: 1px solid var(--green); }
     .signal-icon.sell { background: rgba(255,59,59,0.15); color: var(--red); border: 1px solid var(--red); }
     .signal-info { flex: 1; min-width: 0; }
@@ -245,288 +117,208 @@
     .signal-meta { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
     .signal-price { font-family: var(--font-head); font-size: 14px; }
 
-    /* ── CHAT ────────────────────────────────────────────────────────────────── */
-    .chat-messages {
-      flex: 1; overflow-y: auto;
-      display: flex; flex-direction: column; gap: 12px;
-      padding-bottom: 8px;
-      max-height: 58vh;
-      scrollbar-width: thin; scrollbar-color: var(--cyan-dim) transparent;
-    }
+    .chat-messages { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 8px; max-height: 58vh; scrollbar-width: thin; scrollbar-color: var(--cyan-dim) transparent; }
     .chat-messages::-webkit-scrollbar { width: 4px; }
     .chat-messages::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 2px; }
-
-    .msg {
-      max-width: 82%;
-      padding: 12px 16px; border-radius: 18px;
-      font-size: 15px; line-height: 1.55;
-      animation: msgIn 0.2s ease;
-    }
+    .msg { max-width: 82%; padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.55; animation: msgIn .2s ease; }
     @keyframes msgIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
-    .msg.user {
-      align-self: flex-end;
-      background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.08));
-      border: 1px solid rgba(0,212,255,0.3);
-      border-bottom-right-radius: 4px; color: var(--text);
-    }
-    .msg.jarvis {
-      align-self: flex-start;
-      background: rgba(0,18,40,0.85);
-      border: 1px solid var(--border);
-      border-bottom-left-radius: 4px; color: var(--text);
-    }
-    .msg.jarvis .msg-label {
-      font-family: var(--font-head); font-size: 9px; letter-spacing: 2px;
-      color: var(--cyan); margin-bottom: 5px; display: flex; align-items: center; gap: 6px;
-    }
-    .web-badge {
-      font-family: var(--font-head); font-size: 7px; letter-spacing: 1px;
-      color: var(--gold); border: 1px solid rgba(240,165,0,0.4);
-      border-radius: 4px; padding: 1px 5px;
-    }
+    .msg.user { align-self: flex-end; background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.08)); border: 1px solid rgba(0,212,255,0.3); border-bottom-right-radius: 4px; color: var(--text); }
+    .msg.jarvis { align-self: flex-start; background: rgba(0,18,40,0.85); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text); }
+    .msg.jarvis .msg-label { font-family: var(--font-head); font-size: 9px; letter-spacing: 2px; color: var(--cyan); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+    .web-badge { font-family: var(--font-head); font-size: 7px; letter-spacing: 1px; color: var(--gold); border: 1px solid rgba(240,165,0,0.4); border-radius: 4px; padding: 1px 5px; }
     .msg.thinking .dots span { display: inline-block; animation: dot 1.4s infinite; }
-    .msg.thinking .dots span:nth-child(2) { animation-delay: 0.2s; }
-    .msg.thinking .dots span:nth-child(3) { animation-delay: 0.4s; }
+    .msg.thinking .dots span:nth-child(2) { animation-delay: .2s; }
+    .msg.thinking .dots span:nth-child(3) { animation-delay: .4s; }
     @keyframes dot { 0%,80%,100%{opacity:.2} 40%{opacity:1} }
 
     .chat-input-row { display: flex; gap: 10px; padding-top: 10px; }
-    .chat-input {
-      flex: 1;
-      background: rgba(0,18,40,0.8);
-      border: 1px solid var(--border); border-radius: 28px;
-      padding: 13px 20px;
-      color: var(--text); font-family: var(--font-body); font-size: 15px;
-      outline: none; transition: border-color 0.2s;
-    }
+    .chat-input { flex: 1; background: rgba(0,18,40,0.8); border: 1px solid var(--border); border-radius: 28px; padding: 13px 20px; color: var(--text); font-family: var(--font-body); font-size: 15px; outline: none; transition: border-color .2s; }
     .chat-input:focus { border-color: var(--cyan); }
     .chat-input::placeholder { color: var(--text-dim); }
-
-    .btn-icon {
-      width: 48px; height: 48px; border-radius: 50%;
-      background: var(--cyan-dim); border: 1px solid var(--cyan); color: var(--cyan);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
-    }
+    .btn-icon { width: 48px; height: 48px; border-radius: 50%; background: var(--cyan-dim); border: 1px solid var(--cyan); color: var(--cyan); display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: all .2s; flex-shrink: 0; }
     .btn-icon:hover { background: rgba(0,212,255,0.3); box-shadow: 0 0 18px var(--cyan-glow); }
     .btn-icon.recording { background: rgba(255,59,59,0.2); border-color: var(--red); color: var(--red); animation: recPulse 1s ease-in-out infinite; }
     @keyframes recPulse { 0%,100%{box-shadow:0 0 8px rgba(255,59,59,0.6)} 50%{box-shadow:0 0 22px rgba(255,59,59,0.9)} }
 
-    /* ── TRADE PANEL ─────────────────────────────────────────────────────────── */
     .trade-form { display: flex; flex-direction: column; gap: 14px; }
     .input-group { display: flex; flex-direction: column; gap: 6px; }
     .input-label { font-family: var(--font-head); font-size: 9px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
-    .input-field {
-      background: rgba(0,18,40,0.8); border: 1px solid var(--border); border-radius: 8px;
-      padding: 13px 16px; color: var(--text); font-family: var(--font-body); font-size: 16px;
-      outline: none; transition: border-color 0.2s; width: 100%;
-    }
+    .input-field { background: rgba(0,18,40,0.8); border: 1px solid var(--border); border-radius: 8px; padding: 13px 16px; color: var(--text); font-family: var(--font-body); font-size: 16px; outline: none; transition: border-color .2s; width: 100%; }
     .input-field:focus { border-color: var(--cyan); }
     .side-toggle { display: flex; gap: 8px; }
-    .side-btn {
-      flex: 1; padding: 13px; border-radius: 8px; border: 1px solid var(--border);
-      background: transparent; font-family: var(--font-head); font-size: 11px; letter-spacing: 2px;
-      color: var(--text-dim); cursor: pointer; transition: all 0.2s;
-    }
+    .side-btn { flex: 1; padding: 13px; border-radius: 8px; border: 1px solid var(--border); background: transparent; font-family: var(--font-head); font-size: 11px; letter-spacing: 2px; color: var(--text-dim); cursor: pointer; transition: all .2s; }
     .side-btn.buy.active  { background: rgba(0,255,136,0.1); border-color: var(--green); color: var(--green); }
     .side-btn.sell.active { background: rgba(255,59,59,0.1); border-color: var(--red); color: var(--red); }
-
-    .btn-primary {
-      width: 100%; padding: 15px;
-      background: linear-gradient(135deg, rgba(0,212,255,0.3), rgba(0,212,255,0.1));
-      border: 1px solid var(--cyan); border-radius: var(--radius);
-      color: var(--cyan); font-family: var(--font-head); font-size: 12px; letter-spacing: 3px;
-      cursor: pointer; transition: all 0.2s; text-transform: uppercase;
-    }
+    .btn-primary { width: 100%; padding: 15px; background: linear-gradient(135deg, rgba(0,212,255,0.3), rgba(0,212,255,0.1)); border: 1px solid var(--cyan); border-radius: var(--radius); color: var(--cyan); font-family: var(--font-head); font-size: 12px; letter-spacing: 3px; cursor: pointer; transition: all .2s; text-transform: uppercase; }
     .btn-primary:hover { background: rgba(0,212,255,0.28); box-shadow: 0 0 28px rgba(0,212,255,0.3); }
-    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .trade-preview {
-      background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2);
-      border-radius: 8px; padding: 14px; font-size: 14px; display: none;
-    }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+    .trade-preview { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2); border-radius: 8px; padding: 14px; font-size: 14px; display: none; }
     .trade-preview.show { display: block; }
     .trade-preview .preview-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(0,212,255,0.08); }
     .trade-preview .preview-row:last-child { border: none; }
 
-    /* ── SKELETON ────────────────────────────────────────────────────────────── */
-    .skeleton {
-      background: linear-gradient(90deg, rgba(0,212,255,0.06) 25%, rgba(0,212,255,0.12) 50%, rgba(0,212,255,0.06) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite; border-radius: 6px; height: 22px;
-    }
+    .skeleton { background: linear-gradient(90deg, rgba(0,212,255,0.06) 25%, rgba(0,212,255,0.12) 50%, rgba(0,212,255,0.06) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; height: 22px; }
     @keyframes shimmer { from{background-position:-200% 0} to{background-position:200% 0} }
 
-    /* ── TOAST ───────────────────────────────────────────────────────────────── */
-    #toast-container {
-      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-      z-index: 9999; display: flex; flex-direction: column; gap: 8px;
-      width: calc(100% - 48px); max-width: 600px; pointer-events: none;
-    }
-    .toast {
-      padding: 13px 18px; background: rgba(0,18,40,0.96);
-      border: 1px solid var(--border); border-radius: 10px; font-size: 14px;
-      backdrop-filter: blur(16px);
-      animation: toastIn 0.3s ease, toastOut 0.3s ease 3s forwards;
-      border-left: 3px solid var(--cyan);
-    }
+    #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: calc(100% - 48px); max-width: 600px; pointer-events: none; }
+    .toast { padding: 13px 18px; background: rgba(0,18,40,0.96); border: 1px solid var(--border); border-radius: 10px; font-size: 14px; backdrop-filter: blur(16px); animation: toastIn .3s ease, toastOut .3s ease 3s forwards; border-left: 3px solid var(--cyan); }
     .toast.error   { border-left-color: var(--red); }
     .toast.success { border-left-color: var(--green); }
     @keyframes toastIn  { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:none} }
     @keyframes toastOut { from{opacity:1} to{opacity:0} }
 
-    /* ══════════════════════════════════════════════════════════════════════════
-       WORLD PANEL — PALANTIR INTELLIGENCE MAP
-    ══════════════════════════════════════════════════════════════════════════ */
-    #panel-world.active {
-      position: fixed !important;
-      inset: 0 !important;
-      z-index: 50 !important;
-      padding: 0 !important;
-      max-width: 100% !important;
-      width: 100% !important;
-      height: 100% !important;
-      overflow: hidden;
-      background: #000810;
-    }
+    /* ══ WORLD PANEL ══════════════════════════════════════════════════════════ */
+    #panel-world.active { position: fixed !important; inset: 0 !important; z-index: 50 !important; padding: 0 !important; max-width: 100% !important; width: 100% !important; height: 100% !important; overflow: hidden; background: #000810; }
 
-    #world-topbar {
-      position: absolute; top: 0; left: 0; right: 0; height: 52px;
-      background: rgba(0,6,16,0.95);
-      border-bottom: 1px solid rgba(0,212,255,0.18);
-      display: flex; align-items: center;
-      z-index: 20; backdrop-filter: blur(20px);
-      padding: 0 12px; gap: 4px;
-    }
-
-    #world-back {
-      background: none; border: 1px solid rgba(0,212,255,0.3); border-radius: 6px;
-      color: var(--text-dim); font-family: var(--font-head);
-      font-size: 8px; letter-spacing: 1.5px;
-      padding: 7px 12px; cursor: pointer; transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
-    }
+    /* Top bar */
+    #world-topbar { position: absolute; top: 0; left: 0; right: 0; height: 52px; background: rgba(0,6,16,0.97); border-bottom: 1px solid rgba(0,212,255,0.15); display: flex; align-items: center; z-index: 20; backdrop-filter: blur(20px); padding: 0 10px; gap: 6px; }
+    #world-back { background: none; border: 1px solid rgba(0,212,255,0.3); border-radius: 6px; color: var(--text-dim); font-family: var(--font-head); font-size: 8px; letter-spacing: 1.5px; padding: 6px 10px; cursor: pointer; transition: all .2s; white-space: nowrap; flex-shrink: 0; }
     #world-back:hover { color: var(--cyan); border-color: var(--cyan); }
 
-    .world-stat { display: flex; flex-direction: column; padding: 0 12px; border-left: 1px solid rgba(0,212,255,0.12); flex-shrink: 0; }
+    /* Search box */
+    #world-search-wrap { flex: 1; max-width: 200px; position: relative; flex-shrink: 0; }
+    #world-search { width: 100%; background: rgba(0,12,28,0.9); border: 1px solid rgba(0,212,255,0.2); border-radius: 6px; color: var(--text); font-family: var(--font-body); font-size: 12px; padding: 6px 10px 6px 26px; outline: none; transition: border-color .2s; }
+    #world-search:focus { border-color: var(--cyan); }
+    #world-search::placeholder { color: var(--text-dim); font-size: 11px; }
+    .search-icon { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-dim); pointer-events: none; }
+
+    /* Threat meter */
+    #threat-meter { display: flex; align-items: center; gap: 6px; padding: 0 10px; border-left: 1px solid rgba(0,212,255,0.12); flex-shrink: 0; }
+    .threat-bar-track { width: 50px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+    #threat-bar { height: 100%; border-radius: 2px; transition: all .5s; width: 20%; background: var(--green); }
+    #threat-level { font-family: var(--font-head); font-size: 9px; letter-spacing: 1px; color: var(--green); }
+    .threat-meta { display: flex; flex-direction: column; gap: 1px; }
+    .threat-lbl { font-family: var(--font-head); font-size: 6px; letter-spacing: 1.5px; color: var(--text-dim); }
+
+    /* Topbar stats */
+    .world-stat { display: flex; flex-direction: column; padding: 0 8px; border-left: 1px solid rgba(0,212,255,0.1); flex-shrink: 0; }
     .world-stat-label { font-family: var(--font-head); font-size: 6px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
-    .world-stat-value { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--cyan); text-shadow: 0 0 8px var(--cyan-glow); }
-
-    #world-region-select {
-      margin-left: auto; flex-shrink: 0;
-      background: rgba(0,12,28,0.9); border: 1px solid rgba(0,212,255,0.3); border-radius: 6px;
-      color: var(--gold); font-family: var(--font-head); font-size: 8px; letter-spacing: 1px;
-      padding: 7px 10px; cursor: pointer; outline: none; -webkit-appearance: none;
-    }
+    .world-stat-value { font-family: var(--font-head); font-size: 13px; font-weight: 700; color: var(--cyan); }
+    #world-incident-badge { background: rgba(255,59,59,0.15); border: 1px solid rgba(255,59,59,0.4); border-radius: 10px; padding: 2px 7px; font-family: var(--font-head); font-size: 9px; color: var(--red); flex-shrink: 0; display: none; }
+    #world-region-select { flex-shrink: 0; background: rgba(0,12,28,0.9); border: 1px solid rgba(0,212,255,0.3); border-radius: 6px; color: var(--gold); font-family: var(--font-head); font-size: 8px; letter-spacing: 1px; padding: 6px 8px; cursor: pointer; outline: none; -webkit-appearance: none; }
     #world-region-select option { background: #000814; color: var(--text); }
+    #intel-feed-btn { flex-shrink: 0; background: rgba(0,6,18,0.92); border: 1px solid rgba(0,212,255,0.25); border-radius: 6px; color: var(--text-dim); font-family: var(--font-head); font-size: 8px; letter-spacing: 1px; padding: 6px 8px; cursor: pointer; transition: all .2s; white-space: nowrap; }
+    #intel-feed-btn:hover, #intel-feed-btn.active { color: var(--cyan); border-color: var(--cyan); background: var(--cyan-dim); }
 
-    #world-map { position: absolute; top: 52px; left: 0; right: 0; bottom: 0; z-index: 1; }
+    /* Commodity ticker */
+    #world-ticker { position: absolute; top: 52px; left: 0; right: 0; height: 32px; background: rgba(0,3,10,0.98); border-bottom: 1px solid rgba(0,212,255,0.1); overflow: hidden; z-index: 19; display: flex; align-items: center; }
+    #world-ticker-track { display: flex; align-items: center; animation: tickerScroll 60s linear infinite; white-space: nowrap; will-change: transform; }
+    #world-ticker-track:hover { animation-play-state: paused; }
+    @keyframes tickerScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+    .ticker-item { display: inline-flex; align-items: center; gap: 5px; padding: 0 18px; border-right: 1px solid rgba(0,212,255,0.08); font-family: var(--font-head); font-size: 9px; letter-spacing: .5px; white-space: nowrap; }
+    .ticker-label { color: var(--text-dim); }
+    .ticker-val { font-size: 10px; }
+    .ticker-chg { font-size: 9px; }
 
-    #layer-panel {
-      position: absolute; top: 64px; left: 12px; z-index: 10;
-      background: rgba(0,6,18,0.92); border: 1px solid rgba(0,212,255,0.2);
-      border-radius: var(--radius); backdrop-filter: blur(20px);
-      padding: 12px 10px; min-width: 162px;
-      transition: transform 0.3s ease, opacity 0.3s ease;
-    }
-    #layer-panel.collapsed { transform: translateX(-186px); opacity: 0; pointer-events: none; }
+    /* Alert banners */
+    #world-alerts { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); z-index: 30; display: flex; flex-direction: column; gap: 5px; width: min(90%, 700px); pointer-events: none; }
+    .world-alert { padding: 9px 14px; border-radius: 7px; font-family: var(--font-head); font-size: 10px; letter-spacing: 1px; display: flex; align-items: center; justify-content: space-between; pointer-events: all; animation: alertIn .3s ease; }
+    .world-alert.danger  { background: rgba(255,59,59,0.18); border: 1px solid #ff3b3b; color: #ff3b3b; }
+    .world-alert.warning { background: rgba(240,165,0,0.18); border: 1px solid var(--gold); color: var(--gold); }
+    .world-alert button  { background: none; border: none; color: inherit; cursor: pointer; font-size: 13px; padding: 0 0 0 10px; opacity: .7; }
+    @keyframes alertIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
 
-    #layer-panel-title {
-      font-family: var(--font-head); font-size: 7px; letter-spacing: 2.5px;
-      color: var(--text-dim); text-transform: uppercase;
-      margin-bottom: 9px; padding-bottom: 7px;
-      border-bottom: 1px solid rgba(0,212,255,0.15);
-    }
+    /* Map */
+    #world-map { position: absolute; top: 84px; left: 0; right: 0; bottom: 44px; z-index: 1; transition: right .3s ease; }
+    #world-map.feed-open { right: 320px; }
 
-    .layer-item {
-      display: flex; align-items: center; gap: 9px;
-      padding: 7px 5px; border-radius: 5px;
-      cursor: pointer; transition: background 0.15s;
-      font-size: 12px; color: var(--text-dim); font-family: var(--font-body); user-select: none;
-    }
+    /* Layer panel */
+    #layer-panel { position: absolute; top: 96px; left: 12px; z-index: 10; background: rgba(0,6,18,0.94); border: 1px solid rgba(0,212,255,0.2); border-radius: var(--radius); backdrop-filter: blur(20px); padding: 12px 10px; min-width: 162px; transition: transform .3s ease, opacity .3s ease; }
+    #layer-panel.collapsed { transform: translateX(-190px); opacity: 0; pointer-events: none; }
+    #layer-panel-title { font-family: var(--font-head); font-size: 7px; letter-spacing: 2.5px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 9px; padding-bottom: 7px; border-bottom: 1px solid rgba(0,212,255,0.15); }
+    .layer-item { display: flex; align-items: center; gap: 9px; padding: 7px 5px; border-radius: 5px; cursor: pointer; transition: background .15s; font-size: 12px; color: var(--text-dim); user-select: none; }
     .layer-item:hover { background: rgba(0,212,255,0.07); }
     .layer-item.active { color: var(--text); }
-    .layer-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; flex-shrink: 0; transition: background 0.15s; }
+    .layer-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; flex-shrink: 0; transition: background .15s; }
     .layer-item.active .layer-dot { background: currentColor; }
-
-    #layer-toggle {
-      position: absolute; top: 64px; left: 12px; z-index: 11;
-      background: rgba(0,6,18,0.92); border: 1px solid rgba(0,212,255,0.25); border-radius: 8px;
-      color: var(--cyan); width: 36px; height: 36px;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; backdrop-filter: blur(16px); font-size: 15px;
-      opacity: 0; pointer-events: none; transition: opacity 0.3s;
-    }
+    #layer-toggle { position: absolute; top: 96px; left: 12px; z-index: 11; background: rgba(0,6,18,0.94); border: 1px solid rgba(0,212,255,0.25); border-radius: 8px; color: var(--cyan); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(16px); font-size: 15px; opacity: 0; pointer-events: none; transition: opacity .3s; }
     #layer-toggle.visible { opacity: 1; pointer-events: all; }
 
-    #world-event-counter {
-      position: absolute; bottom: 14px; right: 14px; z-index: 10;
-      background: rgba(0,6,18,0.92); border: 1px solid rgba(0,212,255,0.18);
-      border-radius: var(--radius); backdrop-filter: blur(16px);
-      padding: 10px 14px; font-family: var(--font-head); font-size: 10px;
-    }
-    .event-row { display: flex; align-items: center; gap: 9px; padding: 3px 0; color: var(--text-dim); font-size: 11px; }
-    .event-row .edot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    /* Intel feed */
+    #intel-feed { position: absolute; top: 84px; right: 0; bottom: 44px; width: 320px; background: rgba(0,4,14,0.98); border-left: 1px solid rgba(0,212,255,0.18); z-index: 15; display: flex; flex-direction: column; transform: translateX(320px); transition: transform .3s ease; }
+    #intel-feed.open { transform: translateX(0); }
+    #intel-feed-header { padding: 11px 14px; border-bottom: 1px solid rgba(0,212,255,0.12); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    #intel-feed-header span { font-family: var(--font-head); font-size: 9px; letter-spacing: 2.5px; color: var(--cyan); }
+    #intel-feed-header button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; line-height: 1; }
+    #intel-feed-filters { display: flex; gap: 4px; padding: 7px 10px; border-bottom: 1px solid rgba(0,212,255,0.08); flex-wrap: wrap; flex-shrink: 0; }
+    .nf-btn { padding: 3px 7px; border-radius: 4px; border: 1px solid rgba(0,212,255,0.15); background: transparent; color: var(--text-dim); font-family: var(--font-head); font-size: 7px; letter-spacing: 1px; cursor: pointer; transition: all .15s; }
+    .nf-btn.active { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); }
+    #intel-feed-list { flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(0,212,255,0.15) transparent; }
+    #intel-feed-list::-webkit-scrollbar { width: 3px; }
+    #intel-feed-list::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.2); }
+    #intel-feed-status { padding: 8px 12px; font-size: 10px; color: var(--text-dim); border-bottom: 1px solid rgba(0,212,255,0.06); flex-shrink: 0; font-family: var(--font-head); letter-spacing: 1px; }
+    .news-item { display: block; padding: 9px 12px; border-bottom: 1px solid rgba(0,212,255,0.05); text-decoration: none; transition: background .15s; cursor: pointer; }
+    .news-item:hover { background: rgba(0,212,255,0.05); }
+    .news-meta { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+    .news-source { font-family: var(--font-head); font-size: 7px; letter-spacing: 1px; border: 1px solid currentColor; border-radius: 3px; padding: 1px 4px; flex-shrink: 0; }
+    .news-time { font-size: 10px; color: var(--text-dim); margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+    .news-cat { font-size: 7px; letter-spacing: 1px; font-family: var(--font-head); }
+    .news-title { font-size: 12px; color: var(--text); line-height: 1.4; }
 
-    /* Leaflet dark theme overrides */
-    .leaflet-control-zoom a { background: rgba(0,6,18,0.92) !important; border-color: rgba(0,212,255,0.25) !important; color: var(--cyan) !important; }
+    /* Timeline */
+    #world-timeline { position: absolute; bottom: 0; left: 0; right: 0; height: 44px; background: rgba(0,4,14,0.97); border-top: 1px solid rgba(0,212,255,0.12); z-index: 15; display: flex; align-items: center; gap: 8px; padding: 0 12px; backdrop-filter: blur(16px); }
+    .tl-label { font-family: var(--font-head); font-size: 8px; letter-spacing: 1px; color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
+    #timeline-slider { flex: 1; -webkit-appearance: none; appearance: none; height: 3px; background: rgba(0,212,255,0.15); border-radius: 2px; outline: none; cursor: pointer; }
+    #timeline-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--cyan); cursor: pointer; box-shadow: 0 0 8px var(--cyan-glow); }
+    #timeline-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--cyan); cursor: pointer; border: none; }
+    #timeline-date { font-family: var(--font-head); font-size: 9px; color: var(--cyan); white-space: nowrap; flex-shrink: 0; min-width: 80px; }
+
+    /* Mini dashboard */
+    #world-dashboard { position: absolute; bottom: 50px; right: 12px; z-index: 10; background: rgba(0,6,18,0.94); border: 1px solid rgba(0,212,255,0.15); border-radius: var(--radius); backdrop-filter: blur(16px); padding: 10px 13px; min-width: 200px; }
+    #world-dashboard.feed-open { right: 328px; }
+    .dash-row { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 3px 0; }
+    .dash-key { font-size: 11px; color: var(--text-dim); }
+    .dash-val { font-family: var(--font-head); font-size: 11px; color: var(--text); }
+
+    /* Region summary */
+    #region-summary { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); z-index: 12; background: rgba(0,6,18,0.97); border: 1px solid rgba(0,212,255,0.22); border-radius: var(--radius); padding: 12px 16px; min-width: 260px; max-width: 320px; backdrop-filter: blur(20px); display: none; }
+    .rs-header { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-head); font-size: 9px; letter-spacing: 2px; color: var(--cyan); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(0,212,255,0.12); }
+    .rs-header button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; }
+    .rs-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; color: var(--text-dim); }
+    .rs-news-hdr { font-family: var(--font-head); font-size: 7px; letter-spacing: 2px; color: var(--text-dim); margin: 7px 0 4px; }
+    .rs-news-item { font-size: 11px; color: var(--text); padding: 2px 0; line-height: 1.4; }
+
+    /* Popup Jarvis button */
+    .popup-ask-btn { margin-top: 8px; display: inline-block; background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); border-radius: 5px; color: var(--cyan); font-family: 'Rajdhani',sans-serif; font-size: 11px; padding: 4px 10px; cursor: pointer; transition: background .15s; }
+    .popup-ask-btn:hover { background: rgba(0,212,255,0.2); }
+
+    /* Leaflet overrides */
+    .leaflet-control-zoom a { background: rgba(0,6,18,0.94) !important; border-color: rgba(0,212,255,0.25) !important; color: var(--cyan) !important; }
     .leaflet-control-zoom a:hover { background: rgba(0,212,255,0.15) !important; }
     .leaflet-control-attribution { background: rgba(0,6,18,0.8) !important; color: rgba(200,230,245,0.3) !important; font-size: 9px !important; }
     .leaflet-control-attribution a { color: var(--cyan) !important; }
-    .leaflet-popup-content-wrapper { background: rgba(0,6,18,0.97) !important; border: 1px solid rgba(0,212,255,0.3) !important; color: var(--text) !important; border-radius: 10px !important; box-shadow: 0 0 20px rgba(0,212,255,0.2) !important; }
-    .leaflet-popup-tip { background: rgba(0,6,18,0.97) !important; }
+    .leaflet-popup-content-wrapper { background: rgba(0,6,18,0.98) !important; border: 1px solid rgba(0,212,255,0.3) !important; color: var(--text) !important; border-radius: 10px !important; box-shadow: 0 0 20px rgba(0,212,255,0.2) !important; }
+    .leaflet-popup-tip { background: rgba(0,6,18,0.98) !important; }
     .leaflet-popup-close-button { color: var(--text-dim) !important; }
     .leaflet-container { background: #000810 !important; }
-
     @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    /* ══════════════════════════════════════════════════════════════════════════
-       DESKTOP RESPONSIVE — 900px+
-    ══════════════════════════════════════════════════════════════════════════ */
+    /* ══ RESPONSIVE ══════════════════════════════════════════════════════════ */
     @media (min-width: 900px) {
       body { font-size: 17px; }
-
       .arc-reactor { width: 60px; height: 60px; }
       .header-text h1 { font-size: 28px; letter-spacing: 6px; }
-      .header-text p  { font-size: 12px; }
-
+      .header-text p { font-size: 12px; }
       nav button { font-size: 10px; letter-spacing: 2px; padding: 10px 6px; }
-
       .card-value { font-size: 34px; }
       .card-label { font-size: 10px; letter-spacing: 3px; }
       .card { padding: 20px 24px; }
-
-      /* MARKET: Risk Status (full width) then 2-column mkt-grid */
-      .mkt-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        align-items: start;
-      }
-
-      /* PORTFOLIO: left sidebar + right positions */
-      .pf-grid {
-        display: grid;
-        grid-template-columns: 1fr 2fr;
-        align-items: start;
-      }
-
-      /* SIGNALS: 2-column signal items */
-      .signal-feed {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-      }
-
-      /* CHAT: taller message area, cap bubble width */
+      .mkt-grid { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }
+      .pf-grid { display: grid; grid-template-columns: 1fr 2fr; align-items: start; }
+      .signal-feed { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
       .chat-messages { max-height: calc(100vh - 320px); }
       .msg { max-width: min(75%, 720px); }
-
-      /* TRADE: narrower form on desktop (looks cleaner) */
       #panel-trade { max-width: 640px; }
     }
-
-    /* Extra large — 1400px gets used fully */
     @media (min-width: 1400px) {
       .card-value { font-size: 40px; }
       nav button { font-size: 11px; padding: 11px 8px; }
+    }
+    @media (max-width: 600px) {
+      #world-search-wrap { max-width: 120px; }
+      .world-stat { display: none; }
+      #threat-meter { display: none; }
+      #world-dashboard { display: none; }
     }
   </style>
 </head>
@@ -567,15 +359,13 @@
     <button onclick="switchTab('trade')"     id="tab-trade">Trade</button>
   </nav>
 
-  <!-- ══ PANEL: MARKET ════════════════════════════════════════════════════ -->
+  <!-- ══ MARKET ══════════════════════════════════════════════════════════════ -->
   <div class="panel active" id="panel-market">
-
     <div class="card">
       <div class="card-label">Portfolio Risk Status</div>
       <div id="mkt-risk"><span class="skeleton" style="width:120px;height:30px;display:inline-block;"></span></div>
       <div class="card-sub" id="mkt-value">Lade Daten…</div>
     </div>
-
     <div class="mkt-grid">
       <div class="card-row">
         <div class="card">
@@ -592,11 +382,10 @@
         <div id="mkt-alerts" style="font-size:14px;color:var(--text-dim);margin-top:4px">Lade…</div>
       </div>
     </div>
-
     <button class="btn-primary" onclick="loadMarket()">↻ Aktualisieren</button>
   </div>
 
-  <!-- ══ PANEL: PORTFOLIO ══════════════════════════════════════════════════ -->
+  <!-- ══ PORTFOLIO ═══════════════════════════════════════════════════════════ -->
   <div class="panel" id="panel-portfolio">
     <div class="pf-grid">
       <div class="pf-left">
@@ -628,7 +417,7 @@
     </div>
   </div>
 
-  <!-- ══ PANEL: SIGNALS ═══════════════════════════════════════════════════ -->
+  <!-- ══ SIGNALS ══════════════════════════════════════════════════════════════ -->
   <div class="panel" id="panel-signals">
     <div class="card">
       <div class="card-label">Letzte Trading-Signale</div>
@@ -641,36 +430,62 @@
     <button class="btn-primary" onclick="loadSignals()">↻ Aktualisieren</button>
   </div>
 
-  <!-- ══ PANEL: WORLD — PALANTIR INTEL MAP ════════════════════════════════ -->
+  <!-- ══ WORLD ════════════════════════════════════════════════════════════════ -->
   <div class="panel" id="panel-world">
 
+    <!-- Top bar -->
     <div id="world-topbar">
       <button id="world-back" onclick="switchTab('market')">← BACK</button>
+
+      <div id="world-search-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="world-search" type="text" placeholder="Search location…"
+               onkeydown="if(event.key==='Enter')worldSearch(this.value)"/>
+      </div>
+
+      <div id="threat-meter">
+        <div class="threat-meta">
+          <span class="threat-lbl">THREAT</span>
+          <span id="threat-level">—</span>
+        </div>
+        <div class="threat-bar-track"><div id="threat-bar"></div></div>
+      </div>
+
       <div class="world-stat">
-        <span class="world-stat-label">Events</span>
-        <span class="world-stat-value" id="world-total">—</span>
+        <span class="world-stat-label">EQ M4.5+</span>
+        <span class="world-stat-value" id="world-eq-count" style="color:var(--gold)">—</span>
       </div>
       <div class="world-stat">
         <span class="world-stat-label">Updated</span>
         <span class="world-stat-value" id="world-updated">—</span>
       </div>
-      <div class="world-stat">
-        <span class="world-stat-label">EQ M4.5+</span>
-        <span class="world-stat-value" id="world-eq-count" style="color:var(--gold)">—</span>
-      </div>
+      <span id="world-incident-badge">0 INCIDENTS</span>
+
       <select id="world-region-select" onchange="flyToRegion(this.value)">
         <option value="global">◉ GLOBAL</option>
         <option value="europe">EUROPE</option>
         <option value="mideast">MIDDLE EAST</option>
         <option value="asia">ASIA</option>
         <option value="americas">AMERICAS</option>
+        <option value="africa">AFRICA</option>
       </select>
+
+      <button id="intel-feed-btn" onclick="toggleIntelFeed()">📰 INTEL</button>
     </div>
 
+    <!-- Commodity ticker -->
+    <div id="world-ticker">
+      <div id="world-ticker-track"><span style="font-family:'Orbitron',monospace;font-size:9px;color:rgba(200,230,245,0.2);padding:0 20px;letter-spacing:2px">LOADING MARKET DATA…</span></div>
+    </div>
+
+    <!-- Alert banners -->
+    <div id="world-alerts"></div>
+
+    <!-- Map -->
     <div id="world-map"></div>
 
+    <!-- Layer toggle & panel -->
     <button id="layer-toggle" onclick="toggleLayerPanel()" title="Layers">☰</button>
-
     <div id="layer-panel">
       <div id="layer-panel-title">INTEL LAYERS</div>
       <div class="layer-item active" onclick="toggleLayer('earthquakes',this)"><span class="layer-dot" style="color:#00d4ff"></span> Natural Disasters</div>
@@ -683,15 +498,46 @@
       </div>
     </div>
 
-    <div id="world-event-counter">
-      <div class="event-row"><span class="edot" style="background:#00d4ff;animation:pulseDot 2s infinite"></span><span id="cnt-eq">— earthquakes</span></div>
-      <div class="event-row"><span class="edot" style="background:#ff3b3b;animation:pulseDot 2.3s infinite"></span><span id="cnt-conf">— conflict zones</span></div>
-      <div class="event-row"><span class="edot" style="background:#f0a500;animation:pulseDot 2.7s infinite"></span><span id="cnt-hot">— hotspots</span></div>
+    <!-- Intel feed panel -->
+    <div id="intel-feed">
+      <div id="intel-feed-header">
+        <span>INTEL FEED</span>
+        <button onclick="toggleIntelFeed()">✕</button>
+      </div>
+      <div id="intel-feed-filters">
+        <button class="nf-btn active" data-cat="ALL"      onclick="setNewsFilter('ALL')">ALL</button>
+        <button class="nf-btn"        data-cat="conflict"  onclick="setNewsFilter('conflict')">CONFLICT</button>
+        <button class="nf-btn"        data-cat="economy"   onclick="setNewsFilter('economy')">ECONOMY</button>
+        <button class="nf-btn"        data-cat="military"  onclick="setNewsFilter('military')">MILITARY</button>
+        <button class="nf-btn"        data-cat="climate"   onclick="setNewsFilter('climate')">CLIMATE</button>
+      </div>
+      <div id="intel-feed-status">Loading intel…</div>
+      <div id="intel-feed-list"></div>
     </div>
 
-  </div>
+    <!-- Region summary overlay -->
+    <div id="region-summary"></div>
 
-  <!-- ══ PANEL: JARVIS CHAT ════════════════════════════════════════════════ -->
+    <!-- Timeline -->
+    <div id="world-timeline">
+      <span class="tl-label">7D AGO</span>
+      <input type="range" id="timeline-slider" min="0" max="100" value="100" oninput="updateTimeline(this.value)"/>
+      <span id="timeline-date" class="tl-label">NOW</span>
+      <span class="tl-label">NOW</span>
+    </div>
+
+    <!-- Mini dashboard -->
+    <div id="world-dashboard">
+      <div class="dash-row"><span class="dash-key">⚔ Active Conflicts</span><span class="dash-val" id="stat-conflicts">10</span></div>
+      <div class="dash-row"><span class="dash-key">🌋 Earthquakes 7d</span><span class="dash-val" id="stat-eq">—</span></div>
+      <div class="dash-row"><span class="dash-key">📰 News Stories</span><span class="dash-val" id="stat-news">—</span></div>
+      <div class="dash-row"><span class="dash-key">⚡ Updated</span><span class="dash-val" id="stat-updated">—</span></div>
+      <div class="dash-row"><span class="dash-key">🛡 Threat Level</span><span class="dash-val" id="stat-threat">—</span></div>
+    </div>
+
+  </div><!-- /panel-world -->
+
+  <!-- ══ JARVIS CHAT ══════════════════════════════════════════════════════════ -->
   <div class="panel" id="panel-chat">
     <div class="card" style="flex:1;display:flex;flex-direction:column;gap:0;">
       <div class="card-label">Jarvis — KI Assistent
@@ -712,29 +558,23 @@
     </div>
   </div>
 
-  <!-- ══ PANEL: TRADE ══════════════════════════════════════════════════════ -->
+  <!-- ══ TRADE ════════════════════════════════════════════════════════════════ -->
   <div class="panel" id="panel-trade">
     <div class="card">
       <div class="card-label">⚠ Paper Trading Mode</div>
-      <div style="font-size:14px;color:var(--gold);margin-top:6px">
-        Alle Orders gehen an Alpaca Paper Account ($100k virtuell). Kein echtes Geld involviert.
-      </div>
+      <div style="font-size:14px;color:var(--gold);margin-top:6px">Alle Orders gehen an Alpaca Paper Account ($100k virtuell). Kein echtes Geld involviert.</div>
     </div>
-
     <div class="card trade-form">
       <div class="card-label">Market Order</div>
-
       <div class="input-group">
         <div class="input-label">Symbol</div>
         <input class="input-field" id="t-symbol" type="text" placeholder="z.B. AAPL" maxlength="5"
                style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase();previewTrade()"/>
       </div>
-
       <div class="input-group">
         <div class="input-label">Anzahl Aktien</div>
         <input class="input-field" id="t-qty" type="number" placeholder="1" min="1" oninput="previewTrade()"/>
       </div>
-
       <div class="input-group">
         <div class="input-label">Richtung</div>
         <div class="side-toggle">
@@ -742,31 +582,25 @@
           <button class="side-btn sell"       id="side-sell" onclick="setSide('sell')">VERKAUFEN</button>
         </div>
       </div>
-
       <div class="trade-preview" id="tradePreview">
         <div class="preview-row"><span style="color:var(--text-dim)">Symbol</span><span id="prev-sym">—</span></div>
         <div class="preview-row"><span style="color:var(--text-dim)">Stückzahl</span><span id="prev-qty">—</span></div>
         <div class="preview-row"><span style="color:var(--text-dim)">Kurs ca.</span><span id="prev-price">—</span></div>
         <div class="preview-row"><span style="color:var(--text-dim)">Gesamt ca.</span><span id="prev-total" style="font-family:var(--font-head)">—</span></div>
       </div>
-
-      <button class="btn-primary" id="tradeBtn" onclick="executeTrade()" disabled>
-        ORDER ABSCHICKEN
-      </button>
+      <button class="btn-primary" id="tradeBtn" onclick="executeTrade()" disabled>ORDER ABSCHICKEN</button>
     </div>
   </div>
 
 </div><!-- /app -->
 
-<!-- ══ JAVASCRIPT ══════════════════════════════════════════════════════════ -->
 <script>
-// ── Session ID ──────────────────────────────────────────────────────────────
+// ── Session ID ───────────────────────────────────────────────────────────────
 const SESSION_ID = (() => {
   let id = sessionStorage.getItem('jarvis_sid');
   if (!id) {
     id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-      const r = Math.random() * 16 | 0;
-      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+      const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16);
     });
     sessionStorage.setItem('jarvis_sid', id);
   }
@@ -776,13 +610,12 @@ const SESSION_ID = (() => {
 const API = window.location.origin;
 let WS = null, isRecording = false, recognition = null;
 
-// ── Tab switching ────────────────────────────────────────────────────────────
+// ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
-
   if (name === 'market')    loadMarket();
   if (name === 'portfolio') loadPortfolio();
   if (name === 'signals')   loadSignals();
@@ -790,7 +623,7 @@ function switchTab(name) {
   if (name === 'world')     setTimeout(initWorldMap, 80);
 }
 
-// ── Health check ─────────────────────────────────────────────────────────────
+// ── Health check ──────────────────────────────────────────────────────────────
 async function checkHealth() {
   try {
     const r = await fetch(API + '/health', {signal: AbortSignal.timeout(5000)});
@@ -805,14 +638,12 @@ async function loadMarket() {
     if (!r.ok) { showToast('Noch kein Report — Predictor ausführen', 'error'); return; }
     const d = await r.json();
     const risk = d.risk || {}, mc = d.monte_carlo || {};
-
     const status = (risk.overall_status || 'UNKNOWN').toUpperCase();
     const cls = status === 'GREEN' ? 'green' : status === 'RED' ? 'red' : 'yellow';
     document.getElementById('mkt-risk').innerHTML = `<span class="risk-badge ${cls}">${status}</span>`;
     document.getElementById('mkt-value').textContent = 'Portfolio: ' + (risk.portfolio_value ? '$' + num(risk.portfolio_value) : '—');
     document.getElementById('mkt-median').textContent = mc.median_end_value ? '$' + num(mc.median_end_value) : '—';
-    document.getElementById('mkt-cagr').textContent = mc.expected_cagr ? (mc.expected_cagr * 100).toFixed(1) + '%' : '—';
-
+    document.getElementById('mkt-cagr').textContent = mc.expected_cagr ? (mc.expected_cagr*100).toFixed(1)+'%' : '—';
     const alerts = risk.alerts || [];
     document.getElementById('mkt-alerts').innerHTML = alerts.length === 0
       ? '<span style="color:var(--green)">✓ Keine aktiven Alerts</span>'
@@ -826,29 +657,20 @@ async function loadPortfolio() {
     const r = await fetch(API + '/api/portfolio');
     if (!r.ok) { const e = await r.json().catch(()=>({})); showToast(e.detail || 'Portfolio-Fehler', 'error'); return; }
     const d = await r.json(), a = d.account;
-
     document.getElementById('pf-value').textContent = '$' + num(a.portfolio_value);
     document.getElementById('pf-sub').innerHTML = 'Status: ' + a.status + (a.paper ? ' <span style="font-size:11px;color:var(--gold)">[PAPER]</span>' : '');
     document.getElementById('pf-cash').textContent = '$' + num(a.cash);
-    const pl = a.day_pl;
-    const plEl = document.getElementById('pf-pl');
-    plEl.textContent = (pl >= 0 ? '+' : '') + '$' + num(Math.abs(pl));
+    const pl = a.day_pl, plEl = document.getElementById('pf-pl');
+    plEl.textContent = (pl>=0?'+':'') + '$' + num(Math.abs(pl));
     plEl.style.color = pl >= 0 ? 'var(--green)' : 'var(--red)';
-
     const pos = d.positions || [];
     if (!pos.length) {
       document.getElementById('pf-positions').innerHTML = '<span style="color:var(--text-dim);font-size:14px">Keine offenen Positionen</span>';
     } else {
       const rows = pos.map(p => {
-        const plCls = p.unrealized_pl >= 0 ? 'pos' : 'neg';
-        const plSign = p.unrealized_pl >= 0 ? '+' : '';
-        return `<tr>
-          <td class="sym">${p.symbol}</td>
-          <td>${p.qty.toFixed(0)}</td>
-          <td>$${p.current_price.toFixed(2)}</td>
-          <td class="${plCls}">${plSign}$${Math.abs(p.unrealized_pl).toFixed(0)}
-            <span style="font-size:11px"> (${plSign}${(p.unrealized_plpc*100).toFixed(1)}%)</span></td>
-        </tr>`;
+        const plCls = p.unrealized_pl >= 0 ? 'pos' : 'neg', plSign = p.unrealized_pl >= 0 ? '+' : '';
+        return `<tr><td class="sym">${p.symbol}</td><td>${p.qty.toFixed(0)}</td><td>$${p.current_price.toFixed(2)}</td>
+          <td class="${plCls}">${plSign}$${Math.abs(p.unrealized_pl).toFixed(0)}<span style="font-size:11px"> (${plSign}${(p.unrealized_plpc*100).toFixed(1)}%)</span></td></tr>`;
       }).join('');
       document.getElementById('pf-positions').innerHTML =
         `<table class="pos-table"><thead><tr><th>Symbol</th><th>Qty</th><th>Preis</th><th>P&L</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -864,16 +686,11 @@ async function loadSignals() {
     const el = document.getElementById('signal-list');
     if (!signals.length) { el.innerHTML = '<div style="color:var(--text-dim);font-size:14px">Noch keine Signale aufgezeichnet.</div>'; return; }
     el.innerHTML = signals.map(s => {
-      const side = (s.side || s.action || 'buy').toLowerCase(), isBuy = side === 'buy';
+      const side = (s.side||s.action||'buy').toLowerCase(), isBuy = side==='buy';
       return `<div class="signal-item">
-        <div class="signal-icon ${side}">${isBuy ? 'B' : 'S'}</div>
-        <div class="signal-info">
-          <div class="signal-sym">${s.symbol || '—'}</div>
-          <div class="signal-meta">${s.strategy || ''} · ${formatTime(s.timestamp || s.time)}</div>
-        </div>
-        <div class="signal-price" style="color:${isBuy?'var(--green)':'var(--red)'}">
-          ${s.price ? '$' + (+s.price).toFixed(2) : '—'}
-        </div>
+        <div class="signal-icon ${side}">${isBuy?'B':'S'}</div>
+        <div class="signal-info"><div class="signal-sym">${s.symbol||'—'}</div><div class="signal-meta">${s.strategy||''} · ${formatTime(s.timestamp||s.time)}</div></div>
+        <div class="signal-price" style="color:${isBuy?'var(--green)':'var(--red)'}">${s.price?'$'+(+s.price).toFixed(2):'—'}</div>
       </div>`;
     }).join('');
   } catch { showToast('Signal-Abruf fehlgeschlagen', 'error'); }
@@ -885,158 +702,535 @@ function initWS() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   WS = new WebSocket(`${proto}://${location.host}/ws/jarvis`);
   WS.onmessage = (e) => {
-    const data = JSON.parse(e.data);
-    removeThinking();
-    if (data.type === 'chat') { addMsg('jarvis', data.reply, false); }
-    else if (data.type === 'market_report') {
-      addMsg('jarvis',
-        `Portfolio: $${num(data.portfolio_value)} — Status: ${data.status}\n` +
-        `MC Median: $${num(data.mc_median)} | CAGR: ${(data.mc_cagr*100).toFixed(1)}%\n` +
-        (data.alerts?.length ? `⚠ ${data.alerts[0]}` : '✓ Keine Alerts'), false);
-    } else if (data.type === 'error') { addMsg('jarvis', '⚠ ' + data.message, false); }
+    const data = JSON.parse(e.data); removeThinking();
+    if (data.type === 'chat') addMsg('jarvis', data.reply, false);
+    else if (data.type === 'market_report') addMsg('jarvis',
+      `Portfolio: $${num(data.portfolio_value)} — Status: ${data.status}\nMC Median: $${num(data.mc_median)} | CAGR: ${(data.mc_cagr*100).toFixed(1)}%\n`+(data.alerts?.length?`⚠ ${data.alerts[0]}`:'✓ Keine Alerts'), false);
+    else if (data.type === 'error') addMsg('jarvis', '⚠ ' + data.message, false);
   };
   WS.onerror = () => showToast('WebSocket Verbindungsfehler', 'error');
 }
 
 async function sendChat() {
   const input = document.getElementById('chatInput');
-  const msg = input.value.trim();
-  if (!msg) return;
-  input.value = '';
-  addMsg('user', msg, false);
-  addThinking();
-
+  const msg = input.value.trim(); if (!msg) return;
+  input.value = ''; addMsg('user', msg, false); addThinking();
   if (WS && WS.readyState === WebSocket.OPEN) {
     WS.send(JSON.stringify({ message: msg, session_id: SESSION_ID }));
   } else {
     try {
       const r = await fetch(API + '/api/chat', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        method: 'POST', headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ message: msg, lang: 'de', session_id: SESSION_ID }),
       });
-      const d = await r.json();
-      removeThinking();
-      addMsg('jarvis', d.reply || '…', d.web_search);
-    } catch {
-      removeThinking();
-      addMsg('jarvis', '⚠ Connection to server failed.', false);
-    }
+      const d = await r.json(); removeThinking(); addMsg('jarvis', d.reply||'…', d.web_search);
+    } catch { removeThinking(); addMsg('jarvis', '⚠ Connection to server failed.', false); }
   }
 }
 
 function addMsg(role, text, webSearch) {
-  const el = document.createElement('div');
-  el.className = 'msg ' + role;
+  const el = document.createElement('div'); el.className = 'msg ' + role;
   if (role === 'jarvis') {
     const badge = webSearch ? '<span class="web-badge">WEB</span>' : '';
     el.innerHTML = `<div class="msg-label">JARVIS${badge}</div>${escHtml(text)}`;
   } else { el.textContent = text; }
-  const c = document.getElementById('chatMessages');
-  c.appendChild(el); c.scrollTop = c.scrollHeight;
+  const c = document.getElementById('chatMessages'); c.appendChild(el); c.scrollTop = c.scrollHeight;
 }
-
 function addThinking() {
-  const el = document.createElement('div');
-  el.className = 'msg jarvis thinking'; el.id = 'thinking-indicator';
+  const el = document.createElement('div'); el.className = 'msg jarvis thinking'; el.id = 'thinking-indicator';
   el.innerHTML = `<div class="msg-label">JARVIS</div><div class="dots"><span>●</span><span>●</span><span>●</span></div>`;
-  const c = document.getElementById('chatMessages');
-  c.appendChild(el); c.scrollTop = c.scrollHeight;
+  const c = document.getElementById('chatMessages'); c.appendChild(el); c.scrollTop = c.scrollHeight;
 }
 function removeThinking() { document.getElementById('thinking-indicator')?.remove(); }
 
 // ── VOICE ─────────────────────────────────────────────────────────────────────
 function toggleVoice() {
-  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-    showToast('Spracherkennung nicht unterstützt', 'error'); return;
-  }
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) { showToast('Spracherkennung nicht unterstützt', 'error'); return; }
   if (isRecording) { recognition?.stop(); isRecording = false; document.getElementById('micBtn').classList.remove('recording'); return; }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SR();
-  recognition.lang = 'de-DE'; recognition.interimResults = false;
+  recognition = new SR(); recognition.lang = 'de-DE'; recognition.interimResults = false;
   recognition.onresult = (e) => { document.getElementById('chatInput').value = e.results[0][0].transcript; sendChat(); };
   recognition.onend = () => { isRecording = false; document.getElementById('micBtn').classList.remove('recording'); };
-  recognition.onerror = (e) => { showToast('Mikrofon-Fehler: ' + e.error, 'error'); isRecording = false; document.getElementById('micBtn').classList.remove('recording'); };
-  recognition.start(); isRecording = true;
-  document.getElementById('micBtn').classList.add('recording');
+  recognition.onerror = (e) => { showToast('Mikrofon-Fehler: '+e.error, 'error'); isRecording = false; document.getElementById('micBtn').classList.remove('recording'); };
+  recognition.start(); isRecording = true; document.getElementById('micBtn').classList.add('recording');
 }
 
 // ── TRADE ─────────────────────────────────────────────────────────────────────
 let tradeSide = 'buy';
 function setSide(side) {
   tradeSide = side;
-  document.getElementById('side-buy').classList.toggle('active', side === 'buy');
-  document.getElementById('side-sell').classList.toggle('active', side === 'sell');
+  document.getElementById('side-buy').classList.toggle('active', side==='buy');
+  document.getElementById('side-sell').classList.toggle('active', side==='sell');
   previewTrade();
 }
 async function previewTrade() {
   const sym = document.getElementById('t-symbol').value.trim().toUpperCase();
-  const qty = parseInt(document.getElementById('t-qty').value) || 0;
+  const qty = parseInt(document.getElementById('t-qty').value)||0;
   const btn = document.getElementById('tradeBtn'), prev = document.getElementById('tradePreview');
-  if (!sym || qty < 1) { btn.disabled = true; prev.classList.remove('show'); return; }
+  if (!sym || qty<1) { btn.disabled=true; prev.classList.remove('show'); return; }
   prev.classList.add('show');
-  document.getElementById('prev-sym').textContent = sym;
-  document.getElementById('prev-qty').textContent = qty;
-  document.getElementById('prev-price').textContent = 'Lade…';
-  document.getElementById('prev-total').textContent = 'Lade…';
-  btn.disabled = true;
+  document.getElementById('prev-sym').textContent=sym; document.getElementById('prev-qty').textContent=qty;
+  document.getElementById('prev-price').textContent='Lade…'; document.getElementById('prev-total').textContent='Lade…';
+  btn.disabled=true;
   try {
-    const r = await fetch(API + '/api/trade', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ symbol: sym, qty, side: tradeSide, confirmed: false }),
-    });
+    const r = await fetch(API+'/api/trade', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbol:sym,qty,side:tradeSide,confirmed:false}) });
     const d = await r.json();
-    if (d.preview) {
-      document.getElementById('prev-price').textContent = '$' + (+d.est_price).toFixed(2);
-      document.getElementById('prev-total').textContent = '$' + num(d.est_total);
-      btn.disabled = false;
-    }
-  } catch { document.getElementById('prev-price').textContent = 'Fehler'; }
+    if (d.preview) { document.getElementById('prev-price').textContent='$'+(+d.est_price).toFixed(2); document.getElementById('prev-total').textContent='$'+num(d.est_total); btn.disabled=false; }
+  } catch { document.getElementById('prev-price').textContent='Fehler'; }
 }
 async function executeTrade() {
   const sym = document.getElementById('t-symbol').value.trim().toUpperCase();
-  const qty = parseInt(document.getElementById('t-qty').value);
-  if (!sym || !qty) return;
-  const btn = document.getElementById('tradeBtn');
-  btn.disabled = true; btn.textContent = 'SENDE…';
+  const qty = parseInt(document.getElementById('t-qty').value); if (!sym||!qty) return;
+  const btn = document.getElementById('tradeBtn'); btn.disabled=true; btn.textContent='SENDE…';
   try {
-    const r = await fetch(API + '/api/trade', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ symbol: sym, qty, side: tradeSide, confirmed: true }),
-    });
+    const r = await fetch(API+'/api/trade', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbol:sym,qty,side:tradeSide,confirmed:true}) });
     const d = await r.json();
-    if (d.success) {
-      showToast(`✓ Order ausgeführt — ${d.side.toUpperCase()} ${d.qty} ${d.symbol}`, 'success');
-      document.getElementById('t-symbol').value = '';
-      document.getElementById('t-qty').value = '';
-      document.getElementById('tradePreview').classList.remove('show');
-    } else { showToast('Order fehlgeschlagen', 'error'); }
+    if (d.success) { showToast(`✓ Order ausgeführt — ${d.side.toUpperCase()} ${d.qty} ${d.symbol}`, 'success'); document.getElementById('t-symbol').value=''; document.getElementById('t-qty').value=''; document.getElementById('tradePreview').classList.remove('show'); }
+    else showToast('Order fehlgeschlagen', 'error');
   } catch { showToast('Verbindungsfehler', 'error'); }
-  btn.textContent = 'ORDER ABSCHICKEN'; btn.disabled = false;
+  btn.textContent='ORDER ABSCHICKEN'; btn.disabled=false;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-//  WORLD MAP — PALANTIR INTELLIGENCE DASHBOARD
+//  WORLD MAP v2 — PALANTIR INTELLIGENCE DASHBOARD
 // ════════════════════════════════════════════════════════════════════════════
-let worldMap = null, worldInited = false, worldLayers = {}, layerPanelOpen = true;
+let worldMap=null, worldInited=false, worldLayers={}, layerPanelOpen=true;
+let allEqFeatures=[], newsItems=[], newsFilter='ALL', intelFeedOpen=false;
+let knownEqIds=new Set(), lastNewsCount=0;
+let _tickerInterval=null, _newsInterval=null;
 
 const REGION_VIEWS = {
-  global:   { center: [20, 10],   zoom: 2 },
-  europe:   { center: [54, 15],   zoom: 4 },
-  mideast:  { center: [28, 43],   zoom: 5 },
-  asia:     { center: [28, 104],  zoom: 3 },
-  americas: { center: [10, -75],  zoom: 3 },
+  global:   { center:[20,10],    zoom:2 },
+  europe:   { center:[54,15],    zoom:4 },
+  mideast:  { center:[28,43],    zoom:5 },
+  asia:     { center:[28,104],   zoom:3 },
+  americas: { center:[10,-75],   zoom:3 },
+  africa:   { center:[5,25],     zoom:3 },
 };
 
+// ── Threat level ──────────────────────────────────────────────────────────────
+function calcThreat() {
+  const bigEq = allEqFeatures.filter(f => f.properties.mag >= 6).length;
+  const dangerNews = newsItems.filter(n => /nuclear|invasion|attack|war|explosion|missile/.test((n.title||'').toLowerCase())).length;
+  const score = bigEq*3 + allEqFeatures.length*0.1 + 10 + dangerNews*2;
+  if (score < 25) return { level:'STABLE',   color:'#00ff88', pct:20 };
+  if (score < 45) return { level:'ELEVATED', color:'#f0a500', pct:50 };
+  if (score < 65) return { level:'HIGH',     color:'#ff6600', pct:75 };
+  return           { level:'CRITICAL',       color:'#ff3b3b', pct:100 };
+}
+function updateThreat() {
+  const t = calcThreat();
+  const lvl = document.getElementById('threat-level');
+  const bar = document.getElementById('threat-bar');
+  const statThreat = document.getElementById('stat-threat');
+  if (lvl) { lvl.textContent=t.level; lvl.style.color=t.color; }
+  if (bar) { bar.style.width=t.pct+'%'; bar.style.background=t.color; }
+  if (statThreat) { statThreat.textContent=t.level; statThreat.style.color=t.color; }
+}
+
+// ── Commodity ticker ──────────────────────────────────────────────────────────
+const COMMODITIES = [
+  {sym:'CL=F',    label:'CRUDE OIL', fmt:'2'},
+  {sym:'GC=F',    label:'GOLD',      fmt:'0'},
+  {sym:'NG=F',    label:'NAT GAS',   fmt:'3'},
+  {sym:'ZW=F',    label:'WHEAT',     fmt:'2'},
+  {sym:'HG=F',    label:'COPPER',    fmt:'3'},
+  {sym:'EURUSD=X',label:'EUR/USD',   fmt:'4'},
+  {sym:'BTC-USD', label:'BITCOIN',   fmt:'0'},
+];
+
+async function fetchQuote(sym) {
+  try {
+    const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1d&range=1d`, {signal:AbortSignal.timeout(8000)});
+    const d = await r.json();
+    const meta = d.chart?.result?.[0]?.meta; if (!meta) return null;
+    const price = meta.regularMarketPrice ?? meta.previousClose;
+    const prev  = meta.chartPreviousClose  ?? meta.previousClose;
+    return { price, pct: prev ? (price-prev)/prev*100 : 0 };
+  } catch { return null; }
+}
+
+async function updateTicker() {
+  const track = document.getElementById('world-ticker-track'); if (!track) return;
+  const results = await Promise.allSettled(COMMODITIES.map(c => fetchQuote(c.sym)));
+  let html = '';
+  COMMODITIES.forEach((c, i) => {
+    const res = results[i];
+    if (res.status==='fulfilled' && res.value) {
+      const {price, pct} = res.value;
+      const priceStr = (+price).toFixed(+c.fmt);
+      const color = pct>=0 ? '#00ff88' : '#ff3b3b';
+      const arrow = pct>=0 ? '▲' : '▼';
+      html += `<span class="ticker-item"><span class="ticker-label">${c.label}</span><span class="ticker-val" style="color:${color}">${priceStr}</span><span class="ticker-chg" style="color:${color}">${arrow}${Math.abs(pct).toFixed(2)}%</span></span>`;
+    } else {
+      html += `<span class="ticker-item"><span class="ticker-label">${c.label}</span><span style="color:rgba(200,230,245,0.25)">—</span></span>`;
+    }
+  });
+  track.innerHTML = html + html; // duplicate for seamless loop
+}
+
+// ── News feed ─────────────────────────────────────────────────────────────────
+const RSS_PROXY = 'https://api.rss2json.com/v1/api.json?rss_url=';
+const RSS_SOURCES = [
+  {name:'BBC',       color:'#bb1919', url:'http://feeds.bbci.co.uk/news/world/rss.xml'},
+  {name:'Reuters',   color:'#ff6600', url:'https://feeds.reuters.com/reuters/worldnews'},
+  {name:'Al Jazeera',color:'#009b77', url:'https://www.aljazeera.com/xml/rss/all.xml'},
+];
+
+function classifyNews(title) {
+  const t = (title||'').toLowerCase();
+  if (/war|attack|conflict|bomb|missile|troops|invasion|offensive|strike|fighting|killed|airstrike/.test(t)) return 'conflict';
+  if (/economy|gdp|inflation|trade|sanction|oil price|market|recession|bank|dollar|interest rate|fed|tariff/.test(t)) return 'economy';
+  if (/nuclear|cyber|drone|military|defense|intel|weapon|navy|air force|army|spy|surveillance/.test(t)) return 'military';
+  if (/climate|earthquake|flood|hurricane|wildfire|storm|disaster|volcano|drought|tsunami/.test(t)) return 'climate';
+  return 'general';
+}
+
+function timeAgo(dateStr) {
+  try {
+    const s = (Date.now() - new Date(dateStr).getTime()) / 1000;
+    if (s<60) return 'now'; if (s<3600) return Math.floor(s/60)+'m'; if (s<86400) return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d';
+  } catch { return ''; }
+}
+
+async function fetchRSS(src) {
+  try {
+    const r = await fetch(RSS_PROXY + encodeURIComponent(src.url), {signal:AbortSignal.timeout(12000)});
+    const d = await r.json();
+    if (d.status !== 'ok') return [];
+    return (d.items||[]).slice(0,12).map(item => ({
+      source: src.name, sourceColor: src.color,
+      title: item.title, link: item.link, pubDate: item.pubDate,
+      category: classifyNews(item.title),
+    }));
+  } catch { return []; }
+}
+
+async function loadNews() {
+  const statusEl = document.getElementById('intel-feed-status');
+  if (statusEl) statusEl.textContent = 'Fetching intel…';
+  const results = await Promise.allSettled(RSS_SOURCES.map(fetchRSS));
+  const all = [];
+  results.forEach(r => { if (r.status==='fulfilled') all.push(...r.value); });
+  all.sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+
+  // Alert on danger keywords
+  const dangerous = all.filter(n => /nuclear|invasion|attack/.test((n.title||'').toLowerCase()));
+  if (dangerous.length) showWorldAlert('⚠ ' + dangerous[0].title.slice(0,90) + '…', 'warning');
+
+  newsItems = all;
+  const newCount = all.length - lastNewsCount;
+  lastNewsCount = all.length;
+
+  if (statusEl) statusEl.textContent = `${all.length} stories · updated ${new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}`;
+  const statNews = document.getElementById('stat-news');
+  if (statNews) statNews.textContent = all.length;
+  updateThreat();
+  renderNewsFeed();
+}
+
+function renderNewsFeed() {
+  const container = document.getElementById('intel-feed-list'); if (!container) return;
+  const filtered = newsFilter==='ALL' ? newsItems : newsItems.filter(n=>n.category===newsFilter);
+  if (!filtered.length) { container.innerHTML='<div style="padding:20px;color:rgba(200,230,245,0.3);text-align:center;font-size:12px">No intel for this filter</div>'; return; }
+  const catColor = {conflict:'#ff3b3b', economy:'#f0a500', military:'#00d4ff', climate:'#00ff88', general:'rgba(200,230,245,0.4)'};
+  container.innerHTML = filtered.slice(0,24).map(n => {
+    const cc = catColor[n.category]||catColor.general;
+    return `<a href="${escAttr(n.link)}" target="_blank" rel="noopener noreferrer" class="news-item">
+      <div class="news-meta">
+        <span class="news-source" style="color:${n.sourceColor};border-color:${n.sourceColor}">${n.source}</span>
+        <span class="news-cat" style="color:${cc}">${n.category.toUpperCase()}</span>
+        <span class="news-time">${timeAgo(n.pubDate)}</span>
+      </div>
+      <div class="news-title">${escHtml(n.title)}</div>
+    </a>`;
+  }).join('');
+}
+
+function setNewsFilter(cat) {
+  newsFilter = cat;
+  document.querySelectorAll('.nf-btn').forEach(b => b.classList.toggle('active', b.dataset.cat===cat));
+  renderNewsFeed();
+}
+
+function toggleIntelFeed() {
+  intelFeedOpen = !intelFeedOpen;
+  document.getElementById('intel-feed').classList.toggle('open', intelFeedOpen);
+  document.getElementById('world-map').classList.toggle('feed-open', intelFeedOpen);
+  document.getElementById('world-dashboard').classList.toggle('feed-open', intelFeedOpen);
+  document.getElementById('intel-feed-btn').classList.toggle('active', intelFeedOpen);
+  setTimeout(()=>worldMap?.invalidateSize(), 350);
+}
+
+// ── Alert banners ─────────────────────────────────────────────────────────────
+function showWorldAlert(msg, type='danger') {
+  const c = document.getElementById('world-alerts'); if (!c) return;
+  const el = document.createElement('div'); el.className='world-alert '+type;
+  el.innerHTML = `<span>${escHtml(msg)}</span><button onclick="this.parentElement.remove()">✕</button>`;
+  c.appendChild(el);
+  setTimeout(()=>el.remove(), 8000);
+}
+
+// ── Earthquake markers ────────────────────────────────────────────────────────
+function makeEqMarker(f) {
+  const [lng,lat,depth] = f.geometry.coordinates;
+  const mag = f.properties.mag||4.5;
+  const place = f.properties.place||'Unknown';
+  const time = new Date(f.properties.time).toLocaleString('de-DE',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  const color = mag>=7?'#ff3b3b':mag>=6?'#f0a500':'#00d4ff';
+  const radius = Math.min(Math.pow(1.8,mag-3)*4, 22);
+  const tsunami = f.properties.tsunami ? '<br><b style="color:#ff3b3b">⚠ TSUNAMI WARNING</b>' : '';
+  const usgsUrl = f.properties.url||'';
+  const safePl = place.replace(/'/g,'\\u0027');
+  const m = L.circleMarker([lat,lng], {radius,fillColor:color,color,weight:1.5,opacity:.9,fillOpacity:.35});
+  m.bindPopup(`<div style="font-family:'Rajdhani',sans-serif;min-width:210px">
+    <div style="font-family:'Orbitron',monospace;font-size:10px;color:${color};letter-spacing:2px;margin-bottom:6px">🌋 EARTHQUAKE</div>
+    <b>M${mag.toFixed(1)}</b> — ${escHtml(place)}<br>
+    <span style="color:rgba(200,230,245,0.5);font-size:12px">Depth: ${(+depth).toFixed(0)} km · ${time}</span>${tsunami}
+    ${usgsUrl?`<br><a href="${escAttr(usgsUrl)}" target="_blank" style="color:#00d4ff;font-size:12px">USGS Details ↗</a>`:''}
+    <br><button class="popup-ask-btn" onclick="askJarvis('What is the geopolitical and seismic significance of the M${mag.toFixed(1)} earthquake in ${safePl}?')">🤖 Ask Jarvis</button>
+  </div>`);
+  return m;
+}
+
+async function loadEarthquakeFeed() {
+  try {
+    const r = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson');
+    const data = await r.json();
+    const features = (data.features||[]).slice(0,150);
+
+    // Detect new M5.5+ events
+    features.forEach(f => {
+      if (!knownEqIds.has(f.id) && f.properties.mag >= 5.5 && knownEqIds.size > 0) {
+        showWorldAlert(`⚡ NEW SEISMIC EVENT — M${f.properties.mag.toFixed(1)} ${(f.properties.place||'').slice(0,50)}`, 'danger');
+      }
+      knownEqIds.add(f.id);
+    });
+
+    allEqFeatures = features;
+    worldLayers.earthquakes.clearLayers();
+    features.forEach(f => makeEqMarker(f).addTo(worldLayers.earthquakes));
+
+    const cnt = features.length;
+    document.getElementById('world-eq-count').textContent = cnt;
+    document.getElementById('world-updated').textContent = new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('stat-eq') && (document.getElementById('stat-eq').textContent = cnt);
+    document.getElementById('stat-updated') && (document.getElementById('stat-updated').textContent = new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}));
+
+    // Incident count badge
+    const bigEqs = features.filter(f=>f.properties.mag>=6).length;
+    const badge = document.getElementById('world-incident-badge');
+    if (bigEqs > 0 && badge) { badge.style.display='inline-block'; badge.textContent=bigEqs+' M6+ EQ'; }
+
+    updateThreat();
+  } catch(e) { console.warn('USGS feed error:', e); document.getElementById('world-updated').textContent='offline'; }
+}
+
+// ── Static intel layers ───────────────────────────────────────────────────────
+function loadStaticIntelLayers() {
+  const conflicts = [
+    {lat:48.5, lng:35.0, name:'Ukraine–Russia War',    severity:'high',   parties:'Ukraine vs Russia',    deaths:'500,000+', since:'Feb 2022'},
+    {lat:31.5, lng:34.5, name:'Gaza / Israel Conflict', severity:'high',   parties:'Israel vs Hamas/PIJ',  deaths:'45,000+',  since:'Oct 2023'},
+    {lat:15.3, lng:39.5, name:'Sudan Civil War',         severity:'high',   parties:'SAF vs RSF',           deaths:'20,000+',  since:'Apr 2023'},
+    {lat:15.0, lng:44.0, name:'Yemen War',               severity:'high',   parties:'Houthi vs Coalition',  deaths:'150,000+', since:'Mar 2015'},
+    {lat:18.5, lng:95.0, name:'Myanmar Civil War',       severity:'high',   parties:'Junta vs PDF/EAOs',    deaths:'50,000+',  since:'Feb 2021'},
+    {lat:12.6, lng:41.5, name:'Ethiopia (Amhara)',        severity:'medium', parties:'Federal vs Amhara',    deaths:'10,000+',  since:'2023'},
+    {lat:13.0, lng: 2.0, name:'Sahel Insurgency',        severity:'medium', parties:'Jihadists vs Sahel',   deaths:'5,000+/yr',since:'2012'},
+    {lat: 5.0, lng:26.0, name:'DRC Conflict',             severity:'medium', parties:'M23 vs FARDC/FDLR',    deaths:'Ongoing',  since:'2022'},
+    {lat:35.0, lng:38.5, name:'Syria',                    severity:'medium', parties:'Multiple factions',    deaths:'500,000+', since:'2011'},
+    {lat: 3.0, lng:37.0, name:'South Sudan',              severity:'medium', parties:'Inter-communal',       deaths:'Ongoing',  since:'2013'},
+  ];
+
+  const hotspots = [
+    {lat:23.5, lng:120.5, name:'Taiwan Strait',         desc:'PRC military exercises, invasion risk'},
+    {lat:37.5, lng:127.0, name:'Korean Peninsula',       desc:'DPRK missile & nuclear program'},
+    {lat:26.5, lng: 56.5, name:'Strait of Hormuz',       desc:'20% global oil transit — strategic chokepoint'},
+    {lat:12.5, lng: 44.0, name:'Red Sea / Bab el-Mandeb',desc:'Houthi anti-shipping campaign'},
+    {lat:10.5, lng:106.5, name:'South China Sea',         desc:'Territorial disputes — PRC, Vietnam, PH, MY'},
+    {lat:35.0, lng: 33.0, name:'Eastern Mediterranean',   desc:'Turkey, Greece, Israel tensions'},
+    {lat:34.5, lng: 72.0, name:'Kashmir LoC',             desc:'India–Pakistan nuclear-armed standoff'},
+    {lat: 4.5, lng: -7.5, name:'Gulf of Guinea',          desc:'Piracy hotspot — vessel attacks'},
+    {lat:60.0, lng: 20.0, name:'Baltic Sea',              desc:'NATO–Russia proximity — heightened patrols'},
+    {lat:15.0, lng: 51.5, name:'Gulf of Aden',            desc:'Shipping disruption zone'},
+  ];
+
+  const nuclearSites = [
+    {lat:39.7, lng:125.7, name:'Yongbyon Nuclear Complex', country:'DPRK',    type:'Weapons / Plutonium',  status:'Active'},
+    {lat:32.5, lng: 51.7, name:'Isfahan Nuclear Facility',  country:'Iran',    type:'Conversion / Research',status:'Active'},
+    {lat:32.0, lng: 56.5, name:'Natanz Enrichment Plant',   country:'Iran',    type:'Uranium Enrichment',   status:'Active'},
+    {lat:30.5, lng: 67.0, name:'Khushab Plutonium Reactor', country:'Pakistan',type:'Weapons-grade Pu',     status:'Active'},
+    {lat:28.9, lng: 50.9, name:'Bushehr Nuclear Plant',     country:'Iran',    type:'Power (1 GW)',          status:'Operational'},
+  ];
+
+  const militaryBases = [
+    {lat:37.0, lng: 35.4, name:'Incirlik Air Base',      country:'Turkey / NATO',   branch:'Air Force', personnel:'~5,000'},
+    {lat:26.2, lng: 50.6, name:'NSA Bahrain (5th Fleet)', country:'USA',             branch:'Navy',      personnel:'~9,000'},
+    {lat:11.5, lng: 43.1, name:'Camp Lemonnier',          country:'USA / Djibouti',  branch:'Joint',     personnel:'~4,000'},
+    {lat: 1.35,lng:103.8, name:'Changi Naval Base',        country:'Singapore / USA', branch:'Navy',      personnel:'Rotating'},
+    {lat:-7.3, lng: 72.4, name:'Diego Garcia (BIOT)',      country:'USA / UK',        branch:'Joint',     personnel:'~3,000'},
+    {lat:36.8, lng: -5.6, name:'Rota Naval Station',       country:'USA / Spain',     branch:'Navy',      personnel:'~3,500'},
+    {lat:25.1, lng: 55.4, name:'Al Minhad Air Base',       country:'UAE / Coalition', branch:'Air Force', personnel:'~5,000'},
+    {lat:43.8, lng:132.9, name:'Vladivostok Pacific Fleet', country:'Russia',          branch:'Navy',      personnel:'~25,000'},
+    {lat:22.3, lng:114.2, name:'PLA Southern Theater HQ',   country:'China',           branch:'Joint',     personnel:'~50,000'},
+    {lat:35.7, lng: 37.9, name:'Khmeimim Air Base',          country:'Russia / Syria',  branch:'Air Force', personnel:'~4,000'},
+  ];
+
+  // Conflicts
+  conflicts.forEach(c => {
+    const color = c.severity==='high'?'#ff3b3b':'#e06020';
+    const safeName = c.name.replace(/'/g,'\\u0027');
+    const m = L.circleMarker([c.lat,c.lng], {radius:c.severity==='high'?13:8,fillColor:color,color,weight:2,opacity:1,fillOpacity:.22});
+    m.bindPopup(`<div style="font-family:'Rajdhani',sans-serif;min-width:220px">
+      <div style="font-family:'Orbitron',monospace;font-size:10px;color:#ff3b3b;letter-spacing:2px;margin-bottom:6px">⚔ ACTIVE CONFLICT</div>
+      <b>${escHtml(c.name)}</b><br>
+      <div style="font-size:12px;color:rgba(200,230,245,0.5);margin-top:4px">
+        Parties: ${escHtml(c.parties)}<br>Est. casualties: ${escHtml(c.deaths)}<br>Since: ${escHtml(c.since)}
+      </div>
+      <button class="popup-ask-btn" onclick="askJarvis('Give me the latest intelligence briefing on the ${safeName}. What are the key developments and geopolitical implications?')">🤖 Ask Jarvis</button>
+    </div>`);
+    m.addTo(worldLayers.conflicts);
+  });
+
+  // Hotspots
+  hotspots.forEach(h => {
+    const safeN = h.name.replace(/'/g,'\\u0027');
+    const m = L.circleMarker([h.lat,h.lng], {radius:7,fillColor:'#f0a500',color:'#f0a500',weight:2,opacity:1,fillOpacity:.18,dashArray:'5 3'});
+    m.bindPopup(`<div style="font-family:'Rajdhani',sans-serif;min-width:210px">
+      <div style="font-family:'Orbitron',monospace;font-size:10px;color:#f0a500;letter-spacing:2px;margin-bottom:6px">⚡ FLASHPOINT</div>
+      <b>${escHtml(h.name)}</b><br>
+      <span style="color:rgba(200,230,245,0.5);font-size:12px">${escHtml(h.desc)}</span><br>
+      <button class="popup-ask-btn" onclick="askJarvis('What is the current geopolitical situation at ${safeN} and what are the risks for global stability?')">🤖 Ask Jarvis</button>
+    </div>`);
+    m.addTo(worldLayers.hotspots);
+  });
+
+  // Nuclear
+  nuclearSites.forEach(n => {
+    const safeN = n.name.replace(/'/g,'\\u0027');
+    const m = L.circleMarker([n.lat,n.lng], {radius:7,fillColor:'#00ff88',color:'#00ff88',weight:2,opacity:1,fillOpacity:.25});
+    m.bindPopup(`<div style="font-family:'Rajdhani',sans-serif;min-width:210px">
+      <div style="font-family:'Orbitron',monospace;font-size:10px;color:#00ff88;letter-spacing:2px;margin-bottom:6px">☢ NUCLEAR FACILITY</div>
+      <b>${escHtml(n.name)}</b><br>
+      <div style="font-size:12px;color:rgba(200,230,245,0.5);margin-top:4px">
+        Country: ${escHtml(n.country)}<br>Type: ${escHtml(n.type)}<br>Status: ${escHtml(n.status)}
+      </div>
+      <button class="popup-ask-btn" onclick="askJarvis('What is the status and strategic significance of ${safeN} in ${n.country}?')">🤖 Ask Jarvis</button>
+    </div>`);
+    m.addTo(worldLayers.nuclear);
+  });
+
+  // Military bases
+  militaryBases.forEach(mb => {
+    const safeN = mb.name.replace(/'/g,'\\u0027');
+    const m = L.circleMarker([mb.lat,mb.lng], {radius:6,fillColor:'#ff8800',color:'#ff8800',weight:2,opacity:.9,fillOpacity:.28});
+    m.bindPopup(`<div style="font-family:'Rajdhani',sans-serif;min-width:210px">
+      <div style="font-family:'Orbitron',monospace;font-size:10px;color:#ff8800;letter-spacing:2px;margin-bottom:6px">🟠 MILITARY BASE</div>
+      <b>${escHtml(mb.name)}</b><br>
+      <div style="font-size:12px;color:rgba(200,230,245,0.5);margin-top:4px">
+        Country: ${escHtml(mb.country)}<br>Branch: ${escHtml(mb.branch)}<br>Personnel: ${escHtml(mb.personnel)}
+      </div>
+      <button class="popup-ask-btn" onclick="askJarvis('What is the strategic importance of ${safeN} for ${mb.country}?')">🤖 Ask Jarvis</button>
+    </div>`);
+    m.addTo(worldLayers.military);
+  });
+}
+
+// ── Timeline slider ───────────────────────────────────────────────────────────
+function updateTimeline(val) {
+  const now = Date.now(), weekAgo = now - 7*86400000;
+  const cutoff = weekAgo + (val/100)*(now-weekAgo);
+  const label = val>=99 ? 'NOW' : new Date(cutoff).toLocaleDateString('de-DE',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+  document.getElementById('timeline-date').textContent = label;
+
+  worldLayers.earthquakes.clearLayers();
+  allEqFeatures.filter(f => f.properties.time >= cutoff).forEach(f => makeEqMarker(f).addTo(worldLayers.earthquakes));
+  const visible = worldLayers.earthquakes.getLayers().length;
+  document.getElementById('world-eq-count').textContent = visible;
+  document.getElementById('stat-eq') && (document.getElementById('stat-eq').textContent = visible);
+}
+
+// ── Region summary ────────────────────────────────────────────────────────────
+const REGION_META = {
+  europe:   {name:'EUROPE',       conflicts:1, eqBounds:[35,72,-12,45]},
+  mideast:  {name:'MIDDLE EAST',  conflicts:3, eqBounds:[12,38,25,60]},
+  asia:     {name:'ASIA-PACIFIC', conflicts:2, eqBounds:[-10,55,60,150]},
+  americas: {name:'AMERICAS',     conflicts:0, eqBounds:[-60,72,-180,-30]},
+  africa:   {name:'AFRICA',       conflicts:4, eqBounds:[-40,40,-20,55]},
+};
+const REGION_KW = {
+  europe:   ['europe','uk','france','germany','russia','ukraine','nato','poland','sweden','finland'],
+  mideast:  ['israel','gaza','iran','syria','yemen','saudi','iraq','jordan','middle east','houthi','lebanon'],
+  asia:     ['china','japan','korea','taiwan','india','pakistan','myanmar','asia','beijing','philippines'],
+  americas: ['us ','usa','america','brazil','mexico','canada','latin','venezuela','cuba'],
+  africa:   ['africa','sudan','mali','nigeria','ethiopia','drc','congo','kenya','somalia','sahel'],
+};
+
+function showRegionSummary(region) {
+  const el = document.getElementById('region-summary'); if (!el) return;
+  if (region==='global') { el.style.display='none'; return; }
+  const meta = REGION_META[region]; if (!meta) return;
+  const kw = REGION_KW[region]||[];
+  const b = meta.eqBounds;
+  const eqCount = allEqFeatures.filter(f=>{const[lng,lat]=f.geometry.coordinates;return b&&lat>=b[0]&&lat<=b[1]&&lng>=b[2]&&lng<=b[3];}).length;
+  const regionNews = newsItems.filter(n=>kw.some(k=>(n.title||'').toLowerCase().includes(k))).slice(0,3);
+
+  el.style.display='block';
+  el.innerHTML=`<div class="rs-header"><span>${meta.name} INTEL</span><button onclick="this.closest('#region-summary').style.display='none'">✕</button></div>
+    <div class="rs-row"><span>⚔ Active Conflicts</span><span style="color:#ff3b3b">${meta.conflicts}</span></div>
+    <div class="rs-row"><span>🌋 Earthquakes 7d</span><span style="color:#00d4ff">${eqCount}</span></div>
+    ${regionNews.length?'<div class="rs-news-hdr">TOP STORIES</div>'+regionNews.map(n=>`<div class="rs-news-item">• ${escHtml(n.title.slice(0,65))}…</div>`).join(''):''}`;
+}
+
+function flyToRegion(region) {
+  if (!worldMap) return;
+  const v = REGION_VIEWS[region]||REGION_VIEWS.global;
+  worldMap.flyTo(v.center, v.zoom, {duration:1.5, easeLinearity:.25});
+  showRegionSummary(region);
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+async function worldSearch(query) {
+  if (!query?.trim()) return;
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+      {headers:{'Accept-Language':'en'}, signal:AbortSignal.timeout(6000)});
+    const data = await r.json();
+    if (data.length) {
+      const {lat,lon,display_name} = data[0];
+      worldMap.flyTo([+lat,+lon], 6, {duration:1.5});
+      showToast('📍 ' + display_name.split(',').slice(0,2).join(', '), '');
+    } else showToast('Location not found', 'error');
+  } catch { showToast('Search unavailable', 'error'); }
+}
+
+// ── Ask Jarvis from map ───────────────────────────────────────────────────────
+function askJarvis(question) {
+  switchTab('chat');
+  const input = document.getElementById('chatInput');
+  if (input) { input.value = question; input.focus(); }
+}
+
+// ── Layer controls ────────────────────────────────────────────────────────────
+function toggleLayer(name, el) {
+  if (!worldMap||!worldLayers[name]) return;
+  worldMap.hasLayer(worldLayers[name]) ? worldMap.removeLayer(worldLayers[name]) : worldMap.addLayer(worldLayers[name]);
+  el.classList.toggle('active');
+}
+function toggleLayerPanel() {
+  layerPanelOpen = !layerPanelOpen;
+  document.getElementById('layer-panel').classList.toggle('collapsed', !layerPanelOpen);
+  document.getElementById('layer-toggle').classList.toggle('visible', !layerPanelOpen);
+}
+
+// ── Init world map ────────────────────────────────────────────────────────────
 function initWorldMap() {
   if (worldInited) { worldMap?.invalidateSize(); return; }
   worldInited = true;
 
-  worldMap = L.map('world-map', { center: [20, 10], zoom: 2, zoomControl: true, attributionControl: true, minZoom: 2 });
-
+  worldMap = L.map('world-map', {center:[20,10], zoom:2, zoomControl:true, attributionControl:true, minZoom:2});
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd', maxZoom: 18,
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains:'abcd', maxZoom:18,
   }).addTo(worldMap);
 
   worldLayers = {
@@ -1049,167 +1243,24 @@ function initWorldMap() {
 
   loadEarthquakeFeed();
   loadStaticIntelLayers();
-}
+  updateTicker();
+  loadNews();
 
-async function loadEarthquakeFeed() {
-  try {
-    const r = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson');
-    const data = await r.json();
-    const features = (data.features || []).slice(0, 100);
-
-    features.forEach(f => {
-      const [lng, lat, depth] = f.geometry.coordinates;
-      const mag = f.properties.mag || 4.5;
-      const place = f.properties.place || 'Unknown';
-      const time = new Date(f.properties.time).toLocaleString('de-DE', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
-      const color  = mag >= 7 ? '#ff3b3b' : mag >= 6 ? '#f0a500' : '#00d4ff';
-      const radius = Math.min(Math.pow(1.8, mag - 3) * 4, 22);
-
-      const circle = L.circleMarker([lat, lng], { radius, fillColor: color, color, weight: 1.5, opacity: 0.9, fillOpacity: 0.35 });
-      circle.bindPopup(`<div style="font-family:'Rajdhani',sans-serif;min-width:190px">
-        <div style="font-family:'Orbitron',monospace;font-size:10px;color:${color};letter-spacing:2px;margin-bottom:6px">🌋 EARTHQUAKE</div>
-        <strong>M${mag.toFixed(1)}</strong> — ${escHtml(place)}<br>
-        <span style="color:rgba(200,230,245,0.5);font-size:12px">Depth: ${(+depth).toFixed(0)} km · ${time}</span>
-      </div>`);
-      circle.addTo(worldLayers.earthquakes);
-    });
-
-    const count = features.length;
-    document.getElementById('world-total').textContent  = count;
-    document.getElementById('world-eq-count').textContent = count;
-    document.getElementById('world-updated').textContent  = new Date().toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'});
-    document.getElementById('cnt-eq').textContent = count + ' earthquakes';
-  } catch(e) { console.warn('USGS feed error:', e); document.getElementById('world-updated').textContent = 'offline'; }
-}
-
-function loadStaticIntelLayers() {
-  const conflicts = [
-    { lat:48.5,  lng:35.0, name:'Ukraine–Russia War',      severity:'high',   desc:'Ongoing since Feb 2022' },
-    { lat:31.5,  lng:34.5, name:'Gaza / Israel Conflict',   severity:'high',   desc:'Active operations' },
-    { lat:15.3,  lng:39.5, name:'Sudan Civil War',           severity:'high',   desc:'SAF vs RSF' },
-    { lat:15.0,  lng:44.0, name:'Yemen War',                 severity:'high',   desc:'Houthi / coalition' },
-    { lat:18.5,  lng:95.0, name:'Myanmar Civil War',         severity:'high',   desc:'Junta vs resistance' },
-    { lat:12.6,  lng:41.5, name:'Ethiopia (Amhara)',          severity:'medium', desc:'Internal conflict' },
-    { lat:13.0,  lng: 2.0, name:'Sahel Insurgency',          severity:'medium', desc:'Mali / Burkina Faso / Niger' },
-    { lat: 5.0,  lng:26.0, name:'DRC Conflict',               severity:'medium', desc:'Eastern provinces' },
-    { lat:35.0,  lng:38.5, name:'Syria',                      severity:'medium', desc:'Residual conflict' },
-    { lat: 3.0,  lng:37.0, name:'South Sudan',                severity:'medium', desc:'Inter-community violence' },
-  ];
-
-  const hotspots = [
-    { lat:23.5,  lng:120.5, name:'Taiwan Strait',           desc:'PRC-Taiwan military tensions' },
-    { lat:37.5,  lng:127.0, name:'Korean Peninsula',         desc:'DPRK ballistic missile activity' },
-    { lat:26.5,  lng: 56.5, name:'Strait of Hormuz',         desc:'20% global oil transit — critical chokepoint' },
-    { lat:12.5,  lng: 44.0, name:'Red Sea / Bab el-Mandeb',  desc:'Houthi anti-shipping operations' },
-    { lat:10.5,  lng:106.5, name:'South China Sea',           desc:'Territorial disputes — multiple claimants' },
-    { lat:35.0,  lng: 33.0, name:'Eastern Mediterranean',     desc:'Regional tensions' },
-    { lat:34.5,  lng: 72.0, name:'Kashmir LoC',               desc:'India-Pakistan line of control' },
-    { lat: 4.5,  lng: -7.5, name:'Gulf of Guinea',            desc:'Piracy hotspot' },
-    { lat:60.0,  lng: 20.0, name:'Baltic Sea',                desc:'NATO-Russia proximity — heightened patrols' },
-    { lat:15.0,  lng: 51.5, name:'Gulf of Aden',              desc:'Shipping disruption zone' },
-  ];
-
-  const nuclearSites = [
-    { lat:39.7,  lng:125.7, name:'Yongbyon Nuclear Complex',   country:'DPRK' },
-    { lat:32.5,  lng: 51.7, name:'Isfahan Nuclear Facility',    country:'Iran' },
-    { lat:32.0,  lng: 56.5, name:'Natanz Enrichment Plant',     country:'Iran' },
-    { lat:30.5,  lng: 67.0, name:'Khushab Plutonium Reactor',   country:'Pakistan' },
-    { lat:28.9,  lng: 50.9, name:'Bushehr Nuclear Plant',       country:'Iran' },
-  ];
-
-  const militaryBases = [
-    { lat:37.0,  lng: 35.4, name:'Incirlik Air Base',        country:'Turkey / NATO' },
-    { lat:26.2,  lng: 50.6, name:'NSA Bahrain (5th Fleet)',   country:'USA' },
-    { lat:11.5,  lng: 43.1, name:'Camp Lemonnier',            country:'USA / Djibouti' },
-    { lat: 1.35, lng:103.8, name:'Changi Naval Base',          country:'Singapore' },
-    { lat:-7.3,  lng: 72.4, name:'Diego Garcia',               country:'USA / UK' },
-    { lat:36.8,  lng: -5.6, name:'Rota Naval Station',         country:'USA / Spain' },
-    { lat:25.1,  lng: 55.4, name:'Al Minhad Air Base',         country:'UAE / coalition' },
-    { lat:43.8,  lng:132.9, name:'Vladivostok Pacific Fleet',   country:'Russia' },
-    { lat:22.3,  lng:114.2, name:'PLA Southern Theater HQ',     country:'China' },
-    { lat:35.7,  lng: 37.9, name:'Khmeimim Air Base',           country:'Russia / Syria' },
-  ];
-
-  conflicts.forEach(c => {
-    const color = c.severity === 'high' ? '#ff3b3b' : '#e06020';
-    const m = L.circleMarker([c.lat, c.lng], { radius: c.severity==='high'?13:8, fillColor:color, color, weight:2, opacity:1, fillOpacity:0.25 });
-    m.bindPopup(`<div style="font-family:'Rajdhani',sans-serif;min-width:190px">
-      <div style="font-family:'Orbitron',monospace;font-size:10px;color:#ff3b3b;letter-spacing:2px;margin-bottom:6px">🔴 CONFLICT</div>
-      <strong>${escHtml(c.name)}</strong><br>
-      <span style="color:rgba(200,230,245,0.5);font-size:12px">${escHtml(c.desc)}</span>
-    </div>`);
-    m.addTo(worldLayers.conflicts);
-  });
-  document.getElementById('cnt-conf').textContent = conflicts.length + ' conflict zones';
-
-  hotspots.forEach(h => {
-    const m = L.circleMarker([h.lat, h.lng], { radius:7, fillColor:'#f0a500', color:'#f0a500', weight:2, opacity:1, fillOpacity:0.2, dashArray:'5 3' });
-    m.bindPopup(`<div style="font-family:'Rajdhani',sans-serif;min-width:200px">
-      <div style="font-family:'Orbitron',monospace;font-size:10px;color:#f0a500;letter-spacing:2px;margin-bottom:6px">⚡ HOTSPOT</div>
-      <strong>${escHtml(h.name)}</strong><br>
-      <span style="color:rgba(200,230,245,0.5);font-size:12px">${escHtml(h.desc)}</span>
-    </div>`);
-    m.addTo(worldLayers.hotspots);
-  });
-  document.getElementById('cnt-hot').textContent = hotspots.length + ' hotspots';
-
-  nuclearSites.forEach(n => {
-    const m = L.circleMarker([n.lat, n.lng], { radius:7, fillColor:'#00ff88', color:'#00ff88', weight:2, opacity:1, fillOpacity:0.25 });
-    m.bindPopup(`<div style="font-family:'Rajdhani',sans-serif;min-width:180px">
-      <div style="font-family:'Orbitron',monospace;font-size:10px;color:#00ff88;letter-spacing:2px;margin-bottom:6px">☢️ NUCLEAR</div>
-      <strong>${escHtml(n.name)}</strong><br>
-      <span style="color:rgba(200,230,245,0.5);font-size:12px">${escHtml(n.country)}</span>
-    </div>`);
-    m.addTo(worldLayers.nuclear);
-  });
-
-  militaryBases.forEach(mb => {
-    const m = L.circleMarker([mb.lat, mb.lng], { radius:6, fillColor:'#ff8800', color:'#ff8800', weight:2, opacity:0.9, fillOpacity:0.3 });
-    m.bindPopup(`<div style="font-family:'Rajdhani',sans-serif;min-width:180px">
-      <div style="font-family:'Orbitron',monospace;font-size:10px;color:#ff8800;letter-spacing:2px;margin-bottom:6px">🟠 MILITARY BASE</div>
-      <strong>${escHtml(mb.name)}</strong><br>
-      <span style="color:rgba(200,230,245,0.5);font-size:12px">${escHtml(mb.country)}</span>
-    </div>`);
-    m.addTo(worldLayers.military);
-  });
-}
-
-function toggleLayer(name, el) {
-  if (!worldMap || !worldLayers[name]) return;
-  worldMap.hasLayer(worldLayers[name]) ? worldMap.removeLayer(worldLayers[name]) : worldMap.addLayer(worldLayers[name]);
-  el.classList.toggle('active');
-}
-
-function toggleLayerPanel() {
-  layerPanelOpen = !layerPanelOpen;
-  document.getElementById('layer-panel').classList.toggle('collapsed', !layerPanelOpen);
-  document.getElementById('layer-toggle').classList.toggle('visible', !layerPanelOpen);
-}
-
-function flyToRegion(region) {
-  if (!worldMap) return;
-  const v = REGION_VIEWS[region] || REGION_VIEWS.global;
-  worldMap.flyTo(v.center, v.zoom, { duration: 1.5, easeLinearity: 0.25 });
+  _tickerInterval = setInterval(updateTicker, 60000);
+  _newsInterval   = setInterval(loadNews, 300000);
+  setInterval(()=>{ loadEarthquakeFeed(); }, 600000); // re-check EQ every 10min
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
-function num(n) { return (!n && n!==0) ? '—' : (+n).toLocaleString('de-DE', {maximumFractionDigits:0}); }
-
-function formatTime(ts) {
-  if (!ts) return '';
-  try { return new Date(ts).toLocaleString('de-DE', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
-  catch { return ts; }
-}
-
-function escHtml(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-}
+function num(n) { return (!n&&n!==0)?'—':(+n).toLocaleString('de-DE',{maximumFractionDigits:0}); }
+function formatTime(ts) { if(!ts)return''; try{return new Date(ts).toLocaleString('de-DE',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}catch{return ts;} }
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+function escAttr(s) { return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 function showToast(msg, type='') {
-  const t = document.createElement('div');
-  t.className = 'toast ' + type; t.textContent = msg;
+  const t = document.createElement('div'); t.className='toast '+type; t.textContent=msg;
   document.getElementById('toast-container').appendChild(t);
-  setTimeout(() => t.remove(), 3500);
+  setTimeout(()=>t.remove(), 3500);
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
