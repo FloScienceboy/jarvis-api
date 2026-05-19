@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#000814"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="JARVIS"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+  <title>JARVIS — AI Imperium</title>
+
+  <!-- Google Fonts: Orbitron (techy) + Rajdhani (readable) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet"/>
+
+  <style>
+    /* ═══════════════════════════════════════════════════
+       RESET & ROOT
+    ═══════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #000814;
+      --surface:     rgba(0, 18, 40, 0.85);
+      --border:      rgba(0, 212, 255, 0.25);
+      --cyan:        #00d4ff;
+      --cyan-dim:    rgba(0, 212, 255, 0.15);
+      --cyan-glow:   rgba(0, 212, 255, 0.6);
+      --gold:        #f0a500;
+      --red:         #ff3b3b;
+      --green:       #00ff88;
+      --text:        #c8e6f5;
+      --text-dim:    rgba(200, 230, 245, 0.5);
+      --font-head:   'Orbitron', monospace;
+      --font-body:   'Rajdhani', sans-serif;
+      --radius:      12px;
+      --gap:         16px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       ANIMATED BACKGROUND GRID
+    ═══════════════════════════════════════════════════ */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      animation: gridScroll 20s linear infinite;
+    }
+    @keyframes gridScroll {
+      from { background-position: 0 0; }
+      to   { background-position: 40px 40px; }
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,212,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       LAYOUT SHELL
+    ═══════════════════════════════════════════════════ */
+    #app {
+      position: relative; z-index: 1;
+      min-height: 100dvh;
+      display: flex; flex-direction: column;
+      max-width: 480px; margin: 0 auto;
+      padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       HEADER — ARC REACTOR LOGO + TITLE
+    ═══════════════════════════════════════════════════ */
+    header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 20px var(--gap) 12px;
+    }
+
+    .arc-reactor {
+      width: 48px; height: 48px;
+      position: relative; flex-shrink: 0;
+    }
+    .arc-reactor svg { width: 100%; height: 100%; }
+    .arc-reactor .outer-ring {
+      fill: none; stroke: var(--cyan); stroke-width: 2;
+      animation: reactorPulse 3s ease-in-out infinite;
+    }
+    .arc-reactor .inner-ring {
+      fill: none; stroke: var(--cyan); stroke-width: 1.5; opacity: 0.6;
+      animation: reactorPulse 3s ease-in-out infinite reverse;
+    }
+    .arc-reactor .core {
+      fill: var(--cyan);
+      animation: corePulse 3s ease-in-out infinite;
+    }
+    .arc-reactor .spoke {
+      stroke: var(--cyan); stroke-width: 1; opacity: 0.5;
+    }
+    @keyframes reactorPulse {
+      0%, 100% { opacity: 1; filter: drop-shadow(0 0 6px var(--cyan-glow)); }
+      50%       { opacity: 0.5; filter: drop-shadow(0 0 2px var(--cyan-glow)); }
+    }
+    @keyframes corePulse {
+      0%, 100% { fill: var(--cyan); filter: drop-shadow(0 0 8px var(--cyan)); }
+      50%       { fill: #fff; filter: drop-shadow(0 0 12px #fff); }
+    }
+
+    .header-text h1 {
+      font-family: var(--font-head);
+      font-size: 22px; font-weight: 900; letter-spacing: 4px;
+      color: var(--cyan);
+      text-shadow: 0 0 20px var(--cyan-glow), 0 0 40px rgba(0,212,255,0.3);
+    }
+    .header-text p {
+      font-size: 10px; letter-spacing: 3px;
+      color: var(--text-dim); text-transform: uppercase;
+    }
+
+    .status-dot {
+      margin-left: auto;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green), 0 0 16px var(--green);
+      animation: blink 2s ease-in-out infinite;
+    }
+    .status-dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); animation: none; }
+    @keyframes blink {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       SCAN LINE SEPARATOR
+    ═══════════════════════════════════════════════════ */
+    .scan-sep {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      margin: 0 var(--gap);
+      position: relative; overflow: visible;
+    }
+    .scan-sep::after {
+      content: '';
+      position: absolute; top: -2px; left: 0;
+      height: 5px; width: 60px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      animation: scanMove 4s linear infinite;
+    }
+    @keyframes scanMove {
+      from { left: -60px; } to { left: 100%; }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       NAV TABS
+    ═══════════════════════════════════════════════════ */
+    nav {
+      display: flex; gap: 2px;
+      padding: 12px var(--gap) 4px;
+    }
+    nav button {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-dim);
+      font-family: var(--font-head);
+      font-size: 9px; letter-spacing: 1.5px;
+      padding: 8px 4px;
+      cursor: pointer; transition: all 0.2s;
+      text-transform: uppercase;
+    }
+    nav button.active {
+      background: var(--cyan-dim);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      text-shadow: 0 0 8px var(--cyan-glow);
+      box-shadow: 0 0 12px rgba(0,212,255,0.2) inset;
+    }
+    nav button:hover:not(.active) {
+      border-color: rgba(0,212,255,0.4); color: var(--text);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       PANELS
+    ═══════════════════════════════════════════════════ */
+    .panel { display: none; flex: 1; padding: var(--gap); gap: var(--gap); flex-direction: column; }
+    .panel.active { display: flex; }
+
+    /* ═══════════════════════════════════════════════════
+       GLASS CARDS
+    ═══════════════════════════════════════════════════ */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,212,255,0.5), transparent);
+    }
+    .card-label {
+      font-family: var(--font-head);
+      font-size: 9px; letter-spacing: 2.5px;
+      color: var(--text-dim); text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-family: var(--font-head);
+      font-size: 26px; font-weight: 700;
+      color: var(--cyan);
+      text-shadow: 0 0 20px var(--cyan-glow);
+    }
+    .card-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+    .card-row { display: flex; gap: var(--gap); }
+    .card-row .card { flex: 1; }
+
+    /* ═══════════════════════════════════════════════════
+       RISK BADGE
+    ═══════════════════════════════════════════════════ */
+    .risk-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 20px;
+      font-family: var(--font-head); font-size: 11px; letter-spacing: 2px;
+      font-weight: 700;
+    }
+    .risk-badge.green  { background: rgba(0,255,136,0.1); border: 1px solid var(--green); color: var(--green); }
+    .risk-badge.yellow { background: rgba(240,165,0,0.1); border: 1px solid var(--gold); color: var(--gold); }
+    .risk-badge.red    { background: rgba(255,59,59,0.1); border: 1px solid var(--red); color: var(--red); }
+    .risk-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
+
+    /* ═══════════════════════════════════════════════════
+       POSITIONS TABLE
+    ═══════════════════════════════════════════════════ */
+    .pos-table { width: 100%; border-collapse: collapse; }
+    .pos-table th {
+      font-family: var(--font-head); font-size: 8px; letter-spacing: 2px;
+      color: var(--text-dim); text-transform: uppercase;
+      padding: 6px 4px; border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+    .pos-table td {
+      padding: 8px 4px; font-size: 13px;
+      border-bottom: 1px solid rgba(0,212,255,0.06);
+    }
+    .pos-table .sym { font-family: var(--font-head); font-size: 12px; color: var(--cyan); }
+    .pos-table .pos { color: var(--green); }
+    .pos-table .neg { color: var(--red); }
+
+    /* ═══════════════════════════════════════════════════
+       SIGNALS FEED
+    ═══════════════════════════════════════════════════ */
+    .signal-feed { display: flex; flex-direction: column; gap: 8px; }
+    .signal-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      background: rgba(0,18,40,0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .signal-icon {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+      font-family: var(--font-head); font-weight: 700;
+    }
+    .signal-icon.buy  { background: rgba(0,255,136,0.15); color: var(--green); border: 1px solid var(--green); }
+    .signal-icon.sell { background: rgba(255,59,59,0.15); color: var(--red); border: 1px solid var(--red); }
+    .signal-info { flex: 1; min-width: 0; }
+    .signal-sym { font-family: var(--font-head); font-size: 13px; color: var(--cyan); }
+    .signal-meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+    .signal-price { font-family: var(--font-head); font-size: 13px; }
+
+    /* ═══════════════════════════════════════════════════
+       CHAT PANEL
+    ═══════════════════════════════════════════════════ */
+    .chat-messages {
+      flex: 1; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 10px;
+      padding-bottom: 8px;
+      max-height: 55vh;
+      scrollbar-width: thin; scrollbar-color: var(--cyan-dim) transparent;
+    }
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 2px; }
+
+    .msg {
+      max-width: 85%;
+      padding: 10px 14px; border-radius: 16px;
+      font-size: 14px; line-height: 1.5;
+      animation: msgIn 0.2s ease;
+    }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .msg.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.08));
+      border: 1px solid rgba(0,212,255,0.3);
+      border-bottom-right-radius: 4px; color: var(--text);
+    }
+    .msg.jarvis {
+      align-self: flex-start;
+      background: rgba(0,18,40,0.8);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px; color: var(--text);
+    }
+    .msg.jarvis .msg-label {
+      font-family: var(--font-head); font-size: 9px; letter-spacing: 2px;
+      color: var(--cyan); margin-bottom: 4px;
+    }
+    .msg.thinking .dots span {
+      display: inline-block;
+      animation: dot 1.4s infinite;
+    }
+    .msg.thinking .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .msg.thinking .dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dot { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+
+    .chat-input-row {
+      display: flex; gap: 8px;
+      padding-top: 8px;
+    }
+    .chat-input {
+      flex: 1;
+      background: rgba(0,18,40,0.8);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .chat-input:focus { border-color: var(--cyan); }
+    .chat-input::placeholder { color: var(--text-dim); }
+
+    .btn-icon {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--cyan-dim);
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; cursor: pointer;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .btn-icon:hover { background: rgba(0,212,255,0.3); box-shadow: 0 0 16px var(--cyan-glow); }
+    .btn-icon.recording {
+      background: rgba(255,59,59,0.2);
+      border-color: var(--red); color: var(--red);
+      animation: recPulse 1s ease-in-out infinite;
+    }
+    @keyframes recPulse {
+      0%, 100% { box-shadow: 0 0 8px rgba(255,59,59,0.6); }
+      50%       { box-shadow: 0 0 20px rgba(255,59,59,0.9); }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       TRADE PANEL
+    ═══════════════════════════════════════════════════ */
+    .trade-form { display: flex; flex-direction: column; gap: 12px; }
+    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-label {
+      font-family: var(--font-head); font-size: 9px; letter-spacing: 2px;
+      color: var(--text-dim); text-transform: uppercase;
+    }
+    .input-field {
+      background: rgba(0,18,40,0.8);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .input-field:focus { border-color: var(--cyan); }
+
+    .side-toggle {
+      display: flex; gap: 8px;
+    }
+    .side-btn {
+      flex: 1; padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      font-family: var(--font-head); font-size: 11px; letter-spacing: 2px;
+      color: var(--text-dim); cursor: pointer; transition: all 0.2s;
+    }
+    .side-btn.buy.active  { background: rgba(0,255,136,0.1); border-color: var(--green); color: var(--green); }
+    .side-btn.sell.active { background: rgba(255,59,59,0.1); border-color: var(--red); color: var(--red); }
+
+    .btn-primary {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, rgba(0,212,255,0.3), rgba(0,212,255,0.1));
+      border: 1px solid var(--cyan);
+      border-radius: var(--radius);
+      color: var(--cyan);
+      font-family: var(--font-head); font-size: 12px; letter-spacing: 3px;
+      cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    }
+    .btn-primary:hover {
+      background: rgba(0,212,255,0.25);
+      box-shadow: 0 0 24px rgba(0,212,255,0.3);
+    }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .trade-preview {
+      background: rgba(0,212,255,0.05);
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 8px; padding: 12px;
+      font-size: 13px; display: none;
+    }
+    .trade-preview.show { display: block; }
+    .trade-preview .preview-row {
+      display: flex; justify-content: space-between;
+      padding: 4px 0; border-bottom: 1px solid rgba(0,212,255,0.08);
+    }
+    .trade-preview .preview-row:last-child { border: none; }
+
+    /* ═══════════════════════════════════════════════════
+       LOADING SKELETONS
+    ═══════════════════════════════════════════════════ */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(0,212,255,0.06) 25%, rgba(0,212,255,0.12) 50%, rgba(0,212,255,0.06) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px; height: 20px;
+    }
+    @keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+
+    /* ═══════════════════════════════════════════════════
+       TOAST NOTIFICATIONS
+    ═══════════════════════════════════════════════════ */
+    #toast-container {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+      width: calc(100% - 32px); max-width: 440px;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 12px 16px;
+      background: rgba(0,18,40,0.95);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      backdrop-filter: blur(16px);
+      animation: toastIn 0.3s ease, toastOut 0.3s ease 3s forwards;
+      border-left: 3px solid var(--cyan);
+    }
+    .toast.error { border-left-color: var(--red); }
+    .toast.success { border-left-color: var(--green); }
+    @keyframes toastIn  { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+    @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+
+    /* ═══════════════════════════════════════════════════
+       SCROLLABLE CONTENT AREA
+    ═══════════════════════════════════════════════════ */
+    .scroll-area { overflow-y: auto; flex: 1; }
+
+    /* ═══════════════════════════════════════════════════
+       RESPONSIVE — desktop wider
+    ═══════════════════════════════════════════════════ */
+    @media (min-width: 600px) {
+      #app { max-width: 700px; }
+      .card-value { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div id="app">
+  <header>
+    <!-- Arc Reactor SVG -->
+    <div class="arc-reactor">
+      <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <circle class="outer-ring" cx="24" cy="24" r="22"/>
+        <circle class="inner-ring" cx="24" cy="24" r="15"/>
+        <!-- Spokes -->
+        <line class="spoke" x1="24" y1="9" x2="24" y2="39"/>
+        <line class="spoke" x1="9" y1="24" x2="39" y2="24"/>
+        <line class="spoke" x1="13.4" y1="13.4" x2="34.6" y2="34.6"/>
+        <line class="spoke" x1="34.6" y1="13.4" x2="13.4" y2="34.6"/>
+        <circle class="core" cx="24" cy="24" r="6"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>JARVIS</h1>
+      <p>AI Imperium · Trading Intelligence</p>
+    </div>
+    <div class="status-dot" id="statusDot" title="System Status"></div>
+  </header>
+
+  <div class="scan-sep"></div>
+
+  <nav>
+    <button class="active" onclick="switchTab('market')" id="tab-market">Market</button>
+    <button onclick="switchTab('portfolio')" id="tab-portfolio">Depot</button>
+    <button onclick="switchTab('signals')" id="tab-signals">Signale</button>
+    <button onclick="switchTab('chat')" id="tab-chat">Jarvis</button>
+    <button onclick="switchTab('trade')" id="tab-trade">Trade</button>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       PANEL: MARKET
+  ══════════════════════════════════════ -->
+  <div class="panel active" id="panel-market">
+    <div class="card">
+      <div class="card-label">Portfolio Risk Status</div>
+      <div id="mkt-risk"><span class="skeleton" style="width:100px;height:26px;display:inline-block;"></span></div>
+      <div class="card-sub" id="mkt-value">Lade Daten…</div>
+    </div>
+
+    <div class="card-row">
+      <div class="card">
+        <div class="card-label">MC Median (5J)</div>
+        <div class="card-value" id="mkt-median">—</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Erw. CAGR</div>
+        <div class="card-value" id="mkt-cagr" style="color:var(--green)">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Aktive Alerts</div>
+      <div id="mkt-alerts" style="font-size:13px;color:var(--text-dim)">Lade…</div>
+    </div>
+
+    <button class="btn-primary" onclick="loadMarket()">↻ Aktualisieren</button>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL: PORTFOLIO
+  ══════════════════════════════════════ -->
+  <div class="panel" id="panel-portfolio">
+    <div class="card">
+      <div class="card-label">Portfolio Wert</div>
+      <div class="card-value" id="pf-value">—</div>
+      <div class="card-sub" id="pf-sub">—</div>
+    </div>
+
+    <div class="card-row">
+      <div class="card">
+        <div class="card-label">Cash</div>
+        <div class="card-value" id="pf-cash" style="font-size:20px">—</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Heute P&L</div>
+        <div class="card-value" id="pf-pl" style="font-size:20px">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Positionen</div>
+      <div id="pf-positions">
+        <div class="skeleton" style="height:18px;margin-bottom:8px"></div>
+        <div class="skeleton" style="height:18px;margin-bottom:8px"></div>
+        <div class="skeleton" style="height:18px"></div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="loadPortfolio()">↻ Aktualisieren</button>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL: SIGNALS
+  ══════════════════════════════════════ -->
+  <div class="panel" id="panel-signals">
+    <div class="card">
+      <div class="card-label">Letzte Trading-Signale</div>
+      <div id="signal-list" class="signal-feed" style="margin-top:8px">
+        <div class="skeleton" style="height:52px;margin-bottom:8px;border-radius:8px"></div>
+        <div class="skeleton" style="height:52px;margin-bottom:8px;border-radius:8px"></div>
+        <div class="skeleton" style="height:52px;border-radius:8px"></div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="loadSignals()">↻ Aktualisieren</button>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL: JARVIS CHAT
+  ══════════════════════════════════════ -->
+  <div class="panel" id="panel-chat">
+    <div class="card" style="flex:1;display:flex;flex-direction:column;gap:0;">
+      <div class="card-label">Jarvis — KI Assistent</div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="msg jarvis">
+          <div class="msg-label">JARVIS</div>
+          Guten Tag. Ich bin online und bereit. Wie kann ich Ihnen helfen, Herr Schiffer?
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chatInput" type="text" placeholder="Frag Jarvis…"
+               onkeydown="if(event.key==='Enter')sendChat()"/>
+        <button class="btn-icon" id="micBtn" onclick="toggleVoice()" title="Sprachbefehl">
+          🎙
+        </button>
+        <button class="btn-icon" onclick="sendChat()" title="Senden">
+          ➤
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL: TRADE
+  ══════════════════════════════════════ -->
+  <div class="panel" id="panel-trade">
+    <div class="card">
+      <div class="card-label">⚠ Paper Trading Mode</div>
+      <div style="font-size:13px;color:var(--gold);margin-top:4px">
+        Alle Orders gehen an Alpaca Paper Account ($100k virtuell).
+        Kein echtes Geld involviert.
+      </div>
+    </div>
+
+    <div class="card trade-form">
+      <div class="card-label">Market Order</div>
+
+      <div class="input-group">
+        <div class="input-label">Symbol</div>
+        <input class="input-field" id="t-symbol" type="text" placeholder="z.B. AAPL" maxlength="5"
+               style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase(); previewTrade()"/>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">Anzahl Aktien</div>
+        <input class="input-field" id="t-qty" type="number" placeholder="1" min="1" oninput="previewTrade()"/>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">Richtung</div>
+        <div class="side-toggle">
+          <button class="side-btn buy active" id="side-buy" onclick="setSide('buy')">KAUFEN</button>
+          <button class="side-btn sell" id="side-sell" onclick="setSide('sell')">VERKAUFEN</button>
+        </div>
+      </div>
+
+      <div class="trade-preview" id="tradePreview">
+        <div class="preview-row"><span style="color:var(--text-dim)">Symbol</span><span id="prev-sym">—</span></div>
+        <div class="preview-row"><span style="color:var(--text-dim)">Stückzahl</span><span id="prev-qty">—</span></div>
+        <div class="preview-row"><span style="color:var(--text-dim)">Kurs ca.</span><span id="prev-price">—</span></div>
+        <div class="preview-row"><span style="color:var(--text-dim)">Gesamt ca.</span><span id="prev-total" style="font-family:var(--font-head)">—</span></div>
+      </div>
+
+      <button class="btn-primary" id="tradeBtn" onclick="executeTrade()" disabled>
+        ORDER ABSCHICKEN
+      </button>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ══════════════════════════════════════════
+     PWA MANIFEST + SERVICE WORKER
+══════════════════════════════════════════ -->
+<script>
+// ── Config ─────────────────────────────────────────────────────────────────
+const API = window.location.origin;   // same origin = FastAPI serves this
+let   WS  = null;
+let   currentSide = 'buy';
+let   isRecording = false;
+let   recognition = null;
+
+// ── Tab switching ───────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+
+  // Lazy-load data on first switch
+  if (name === 'market')    loadMarket();
+  if (name === 'portfolio') loadPortfolio();
+  if (name === 'signals')   loadSignals();
+  if (name === 'chat')      initWS();
+}
+
+// ── Health check ────────────────────────────────────────────────────────────
+async function checkHealth() {
+  try {
+    const r = await fetch(API + '/health', {signal: AbortSignal.timeout(5000)});
+    if (r.ok) {
+      document.getElementById('statusDot').className = 'status-dot';
+    } else {
+      document.getElementById('statusDot').className = 'status-dot offline';
+    }
+  } catch {
+    document.getElementById('statusDot').className = 'status-dot offline';
+  }
+}
+
+// ── MARKET ──────────────────────────────────────────────────────────────────
+async function loadMarket() {
+  try {
+    const r = await fetch(API + '/api/market');
+    if (!r.ok) { showToast('Noch kein Report — Predictor ausführen', 'error'); return; }
+    const d = await r.json();
+
+    const risk = d.risk || {};
+    const mc   = d.monte_carlo || {};
+
+    // Risk badge
+    const status = (risk.overall_status || 'UNKNOWN').toUpperCase();
+    const cls = status === 'GREEN' ? 'green' : status === 'RED' ? 'red' : 'yellow';
+    document.getElementById('mkt-risk').innerHTML =
+      `<span class="risk-badge ${cls}">${status}</span>`;
+
+    const val = risk.portfolio_value ? '$' + num(risk.portfolio_value) : '—';
+    document.getElementById('mkt-value').textContent = 'Portfolio: ' + val;
+
+    // MC
+    document.getElementById('mkt-median').textContent =
+      mc.median_end_value ? '$' + num(mc.median_end_value) : '—';
+    document.getElementById('mkt-cagr').textContent =
+      mc.expected_cagr ? (mc.expected_cagr * 100).toFixed(1) + '%' : '—';
+
+    // Alerts
+    const alerts = risk.alerts || [];
+    if (alerts.length === 0) {
+      document.getElementById('mkt-alerts').innerHTML =
+        '<span style="color:var(--green)">✓ Keine aktiven Alerts</span>';
+    } else {
+      document.getElementById('mkt-alerts').innerHTML =
+        alerts.map(a => `<div style="margin-bottom:6px;color:var(--gold)">⚠ ${a}</div>`).join('');
+    }
+  } catch(e) {
+    showToast('API nicht erreichbar', 'error');
+  }
+}
+
+// ── PORTFOLIO ────────────────────────────────────────────────────────────────
+async function loadPortfolio() {
+  try {
+    const r = await fetch(API + '/api/portfolio');
+    if (!r.ok) {
+      const err = await r.json().catch(()=>({}));
+      showToast(err.detail || 'Portfolio-Fehler', 'error');
+      return;
+    }
+    const d = await r.json();
+    const a = d.account;
+
+    document.getElementById('pf-value').textContent = '$' + num(a.portfolio_value);
+    const paperTag = a.paper ? ' <span style="font-size:10px;color:var(--gold)">[PAPER]</span>' : '';
+    document.getElementById('pf-sub').innerHTML = 'Status: ' + a.status + paperTag;
+
+    document.getElementById('pf-cash').textContent = '$' + num(a.cash);
+
+    const pl = a.day_pl;
+    const plEl = document.getElementById('pf-pl');
+    plEl.textContent = (pl >= 0 ? '+' : '') + '$' + num(Math.abs(pl));
+    plEl.style.color = pl >= 0 ? 'var(--green)' : 'var(--red)';
+
+    // Positions table
+    const pos = d.positions || [];
+    if (pos.length === 0) {
+      document.getElementById('pf-positions').innerHTML =
+        '<span style="color:var(--text-dim);font-size:13px">Keine offenen Positionen</span>';
+    } else {
+      const rows = pos.map(p => {
+        const plCls = p.unrealized_pl >= 0 ? 'pos' : 'neg';
+        const plSign = p.unrealized_pl >= 0 ? '+' : '';
+        const plPct = (p.unrealized_plpc * 100).toFixed(1);
+        return `<tr>
+          <td class="sym">${p.symbol}</td>
+          <td>${p.qty.toFixed(0)}</td>
+          <td>$${p.current_price.toFixed(2)}</td>
+          <td class="${plCls}">${plSign}$${Math.abs(p.unrealized_pl).toFixed(0)}<br>
+            <span style="font-size:11px">${plSign}${plPct}%</span></td>
+        </tr>`;
+      }).join('');
+      document.getElementById('pf-positions').innerHTML =
+        `<table class="pos-table">
+          <thead><tr><th>Symbol</th><th>Qty</th><th>Preis</th><th>P&L</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+  } catch(e) {
+    showToast('API nicht erreichbar', 'error');
+  }
+}
+
+// ── SIGNALS ──────────────────────────────────────────────────────────────────
+async function loadSignals() {
+  try {
+    const r = await fetch(API + '/api/signals');
+    const d = await r.json();
+    const signals = d.signals || [];
+    const el = document.getElementById('signal-list');
+    if (signals.length === 0) {
+      el.innerHTML = '<div style="color:var(--text-dim);font-size:13px">Noch keine Signale aufgezeichnet.</div>';
+      return;
+    }
+    el.innerHTML = signals.map(s => {
+      const side = (s.side || s.action || 'buy').toLowerCase();
+      const isBuy = side === 'buy';
+      return `<div class="signal-item">
+        <div class="signal-icon ${side}">${isBuy ? 'B' : 'S'}</div>
+        <div class="signal-info">
+          <div class="signal-sym">${s.symbol || '—'}</div>
+          <div class="signal-meta">${s.strategy || ''} · ${formatTime(s.timestamp || s.time)}</div>
+        </div>
+        <div class="signal-price" style="color:${isBuy?'var(--green)':'var(--red)'}">
+          ${s.price ? '$' + (+s.price).toFixed(2) : '—'}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    showToast('Signal-Abruf fehlgeschlagen', 'error');
+  }
+}
+
+// ── WEBSOCKET CHAT ────────────────────────────────────────────────────────────
+function initWS() {
+  if (WS && WS.readyState === WebSocket.OPEN) return;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  WS = new WebSocket(`${proto}://${location.host}/ws/jarvis`);
+  WS.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    removeThinking();
+    if (data.type === 'chat') {
+      addMsg('jarvis', data.reply);
+    } else if (data.type === 'market_report') {
+      addMsg('jarvis',
+        `Portfolio: $${num(data.portfolio_value)} — Status: ${data.status}\n` +
+        `MC Median: $${num(data.mc_median)} | CAGR: ${(data.mc_cagr*100).toFixed(1)}%\n` +
+        (data.alerts && data.alerts.length ? `⚠ ${data.alerts[0]}` : '✓ Keine Alerts')
+      );
+    } else if (data.type === 'error') {
+      addMsg('jarvis', '⚠ ' + data.message);
+    }
+  };
+  WS.onerror = () => showToast('WebSocket Verbindungsfehler', 'error');
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  addMsg('user', msg);
+  addThinking();
+
+  // Try WS first, fall back to HTTP
+  if (WS && WS.readyState === WebSocket.OPEN) {
+    WS.send(JSON.stringify({ message: msg }));
+  } else {
+    try {
+      const r = await fetch(API + '/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: msg, lang: 'de' }),
+      });
+      const d = await r.json();
+      removeThinking();
+      addMsg('jarvis', d.reply || '…');
+    } catch {
+      removeThinking();
+      addMsg('jarvis', '⚠ Verbindung zum Server fehlgeschlagen.');
+    }
+  }
+}
+
+function addMsg(role, text) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + role;
+  if (role === 'jarvis') {
+    el.innerHTML = `<div class="msg-label">JARVIS</div>${escHtml(text)}`;
+  } else {
+    el.textContent = text;
+  }
+  const container = document.getElementById('chatMessages');
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function addThinking() {
+  const el = document.createElement('div');
+  el.className = 'msg jarvis thinking'; el.id = 'thinking-indicator';
+  el.innerHTML = `<div class="msg-label">JARVIS</div><div class="dots"><span>●</span><span>●</span><span>●</span></div>`;
+  const c = document.getElementById('chatMessages');
+  c.appendChild(el); c.scrollTop = c.scrollHeight;
+}
+
+function removeThinking() {
+  const el = document.getElementById('thinking-indicator');
+  if (el) el.remove();
+}
+
+// ── VOICE INPUT ──────────────────────────────────────────────────────────────
+function toggleVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Spracherkennung wird auf diesem Gerät nicht unterstützt', 'error');
+    return;
+  }
+  if (isRecording) {
+    recognition && recognition.stop();
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'de-DE';
+  recognition.interimResults = false;
+  recognition.onresult = (e) => {
+    const text = e.results[0][0].transcript;
+    document.getElementById('chatInput').value = text;
+    sendChat();
+  };
+  recognition.onend = () => {
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+  };
+  recognition.onerror = (e) => {
+    showToast('Mikrofon-Fehler: ' + e.error, 'error');
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+  };
+  recognition.start();
+  isRecording = true;
+  document.getElementById('micBtn').classList.add('recording');
+}
+
+// ── TRADE ────────────────────────────────────────────────────────────────────
+let tradeSide = 'buy';
+
+function setSide(side) {
+  tradeSide = side;
+  document.getElementById('side-buy').classList.toggle('active', side === 'buy');
+  document.getElementById('side-sell').classList.toggle('active', side === 'sell');
+  previewTrade();
+}
+
+async function previewTrade() {
+  const sym = document.getElementById('t-symbol').value.trim().toUpperCase();
+  const qty = parseInt(document.getElementById('t-qty').value) || 0;
+  const btn = document.getElementById('tradeBtn');
+  const prev = document.getElementById('tradePreview');
+
+  if (!sym || qty < 1) { btn.disabled = true; prev.classList.remove('show'); return; }
+
+  prev.classList.add('show');
+  document.getElementById('prev-sym').textContent = sym;
+  document.getElementById('prev-qty').textContent = qty;
+  document.getElementById('prev-price').textContent = 'Lade…';
+  document.getElementById('prev-total').textContent = 'Lade…';
+  btn.disabled = true;
+
+  try {
+    const r = await fetch(API + '/api/trade', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ symbol: sym, qty, side: tradeSide, confirmed: false }),
+    });
+    const d = await r.json();
+    if (d.preview) {
+      document.getElementById('prev-price').textContent = '$' + (+d.est_price).toFixed(2);
+      document.getElementById('prev-total').textContent = '$' + num(d.est_total);
+      btn.disabled = false;
+    }
+  } catch {
+    document.getElementById('prev-price').textContent = 'Fehler';
+    document.getElementById('prev-total').textContent = '—';
+  }
+}
+
+async function executeTrade() {
+  const sym = document.getElementById('t-symbol').value.trim().toUpperCase();
+  const qty = parseInt(document.getElementById('t-qty').value);
+  if (!sym || !qty) return;
+
+  const btn = document.getElementById('tradeBtn');
+  btn.disabled = true;
+  btn.textContent = 'SENDE…';
+
+  try {
+    const r = await fetch(API + '/api/trade', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ symbol: sym, qty, side: tradeSide, confirmed: true }),
+    });
+    const d = await r.json();
+    if (d.success) {
+      showToast(`✓ Order ausgeführt — ${d.side.toUpperCase()} ${d.qty} ${d.symbol}`, 'success');
+      document.getElementById('t-symbol').value = '';
+      document.getElementById('t-qty').value = '';
+      document.getElementById('tradePreview').classList.remove('show');
+    } else {
+      showToast('Order fehlgeschlagen', 'error');
+    }
+  } catch {
+    showToast('Verbindungsfehler', 'error');
+  }
+
+  btn.textContent = 'ORDER ABSCHICKEN';
+  btn.disabled = false;
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function num(n) {
+  if (!n && n !== 0) return '—';
+  return (+n).toLocaleString('de-DE', {maximumFractionDigits: 0});
+}
+
+function formatTime(ts) {
+  if (!ts) return '';
+  try {
+    return new Date(ts).toLocaleString('de-DE', {
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+  } catch { return ts; }
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function showToast(msg, type = '') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+checkHealth();
+setInterval(checkHealth, 30000);
+loadMarket();  // load on start
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
