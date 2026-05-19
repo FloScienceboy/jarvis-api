@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#000814"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="JARVIS"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <link rel="apple-touch-icon" href="/icons/icon-192.png"/>
+  <title>JARVIS — AI Imperium</title>
+
+  <!-- Google Fonts: Orbitron (techy) + Rajdhani (readable) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet"/>
+
+  <!-- Leaflet.js for the WORLD map -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    /* ═══════════════════════════════════════════════════
+       RESET & ROOT
+    ═══════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #000814;
+      --surface:     rgba(0, 18, 40, 0.85);
+      --border:      rgba(0, 212, 255, 0.25);
+      --cyan:        #00d4ff;
+      --cyan-dim:    rgba(0, 212, 255, 0.15);
+      --cyan-glow:   rgba(0, 212, 255, 0.6);
+      --gold:        #f0a500;
+      --red:         #ff3b3b;
+      --green:       #00ff88;
+      --text:        #c8e6f5;
+      --text-dim:    rgba(200, 230, 245, 0.5);
+      --font-head:   'Orbitron', monospace;
+      --font-body:   'Rajdhani', sans-serif;
+      --radius:      12px;
+      --gap:         16px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       ANIMATED BACKGROUND GRID
+    ═══════════════════════════════════════════════════ */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      animation: gridScroll 20s linear infinite;
+    }
+    @keyframes gridScroll {
+      from { background-position: 0 0; }
+      to   { background-position: 40px 40px; }
+    }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,212,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       LAYOUT SHELL
+    ═══════════════════════════════════════════════════ */
+    #app {
+      position: relative; z-index: 1;
+      min-height: 100dvh;
+      display: flex; flex-direction: column;
+      max-width: 480px; margin: 0 auto;
+      padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       HEADER — ARC REACTOR LOGO + TITLE
+    ═══════════════════════════════════════════════════ */
+    header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 20px var(--gap) 12px;
+    }
+
+    .arc-reactor {
+      width: 48px; height: 48px;
+      position: relative; flex-shrink: 0;
+    }
+    .arc-reactor svg { width: 100%; height: 100%; }
+    .arc-reactor .outer-ring {
+      fill: none; stroke: var(--cyan); stroke-width: 2;
+      animation: reactorPulse 3s ease-in-out infinite;
+    }
+    .arc-reactor .inner-ring {
+      fill: none; stroke: var(--cyan); stroke-width: 1.5; opacity: 0.6;
+      animation: reactorPulse 3s ease-in-out infinite reverse;
+    }
+    .arc-reactor .core {
+      fill: var(--cyan);
+      animation: corePulse 3s ease-in-out infinite;
+    }
+    .arc-reactor .spoke {
+      stroke: var(--cyan); stroke-width: 1; opacity: 0.5;
+    }
+    @keyframes reactorPulse {
+      0%, 100% { opacity: 1; filter: drop-shadow(0 0 6px var(--cyan-glow)); }
+      50%       { opacity: 0.5; filter: drop-shadow(0 0 2px var(--cyan-glow)); }
+    }
+    @keyframes corePulse {
+      0%, 100% { fill: var(--cyan); filter: drop-shadow(0 0 8px var(--cyan)); }
+      50%       { fill: #fff; filter: drop-shadow(0 0 12px #fff); }
+    }
+
+    .header-text h1 {
+      font-family: var(--font-head);
+      font-size: 22px; font-weight: 900; letter-spacing: 4px;
+      color: var(--cyan);
+      text-shadow: 0 0 20px var(--cyan-glow), 0 0 40px rgba(0,212,255,0.3);
+    }
+    .header-text p {
+      font-size: 10px; letter-spacing: 3px;
+      color: var(--text-dim); text-transform: uppercase;
+    }
+
+    .status-dot {
+      margin-left: auto;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green), 0 0 16px var(--green);
+      animation: blink 2s ease-in-out infinite;
+    }
+    .status-dot.offline { background: var(--red); box-shadow: 0 0 8px var(--red); animation: none; }
+    @keyframes blink {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       SCAN LINE SEPARATOR
+    ═══════════════════════════════════════════════════ */
+    .scan-sep {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      margin: 0 var(--gap);
+      position: relative; overflow: visible;
+    }
+    .scan-sep::after {
+      content: '';
+      position: absolute; top: -2px; left: 0;
+      height: 5px; width: 60px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      animation: scanMove 4s linear infinite;
+    }
+    @keyframes scanMove {
+      from { left: -60px; } to { left: 100%; }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       NAV TABS
+    ═══════════════════════════════════════════════════ */
+    nav {
+      display: flex; gap: 2px;
+      padding: 12px var(--gap) 4px;
+    }
+    nav button {
+      flex: 1;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-dim);
+      font-family: var(--font-head);
+      font-size: 8px; letter-spacing: 1px;
+      padding: 8px 2px;
+      cursor: pointer; transition: all 0.2s;
+      text-transform: uppercase;
+    }
+    nav button.active {
+      background: var(--cyan-dim);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      text-shadow: 0 0 8px var(--cyan-glow);
+      box-shadow: 0 0 12px rgba(0,212,255,0.2) inset;
+    }
+    nav button:hover:not(.active) {
+      border-color: rgba(0,212,255,0.4); color: var(--text);
+    }
+    nav button#tab-world { color: var(--gold); border-color: rgba(240,165,0,0.3); }
+    nav button#tab-world.active {
+      background: rgba(240,165,0,0.12); border-color: var(--gold);
+      color: var(--gold); text-shadow: 0 0 8px rgba(240,165,0,0.6);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       PANELS
+    ═══════════════════════════════════════════════════ */
+    .panel { display: none; flex: 1; padding: var(--gap); gap: var(--gap); flex-direction: column; }
+    .panel.active { display: flex; }
+
+    /* ═══════════════════════════════════════════════════
+       GLASS CARDS
+    ═══════════════════════════════════════════════════ */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,212,255,0.5), transparent);
+    }
+    .card-label {
+      font-family: var(--font-head);
+      font-size: 9px; letter-spacing: 2.5px;
+      color: var(--text-dim); text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .card-value {
+      font-family: var(--font-head);
+      font-size: 26px; font-weight: 700;
+      color: var(--cyan);
+      text-shadow: 0 0 20px var(--cyan-glow);
+    }
+    .card-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+    .card-row { display: flex; gap: var(--gap); }
+    .card-row .card { flex: 1; }
+
+    /* ═══════════════════════════════════════════════════
+       RISK BADGE
+    ═══════════════════════════════════════════════════ */
+    .risk-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 20px;
+      font-family: var(--font-head); font-size: 11px; letter-spacing: 2px;
+      font-weight: 700;
+    }
+    .risk-badge.green  { background: rgba(0,255,136,0.1); border: 1px solid var(--green); color: var(--green); }
+    .risk-badge.yellow { background: rgba(240,165,0,0.1); border: 1px solid var(--gold); color: var(--gold); }
+    .risk-badge.red    { background: rgba(255,59,59,0.1); border: 1px solid var(--red); color: var(--red); }
+    .risk-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 6px currentColor; }
+
+    /* ═══════════════════════════════════════════════════
+       POSITIONS TABLE
+    ═══════════════════════════════════════════════════ */
+    .pos-table { width: 100%; border-collapse: collapse; }
+    .pos-table th {
+      font-family: var(--font-head); font-size: 8px; letter-spacing: 2px;
+      color: var(--text-dim); text-transform: uppercase;
+      padding: 6px 4px; border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+    .pos-table td {
+      padding: 8px 4px; font-size: 13px;
+      border-bottom: 1px solid rgba(0,212,255,0.06);
+    }
+    .pos-table .sym { font-family: var(--font-head); font-size: 12px; color: var(--cyan); }
+    .pos-table .pos { color: var(--green); }
+    .pos-table .neg { color: var(--red); }
+
+    /* ═══════════════════════════════════════════════════
+       SIGNALS FEED
+    ═══════════════════════════════════════════════════ */
+    .signal-feed { display: flex; flex-direction: column; gap: 8px; }
+    .signal-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      background: rgba(0,18,40,0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    .signal-icon {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+      font-family: var(--font-head); font-weight: 700;
+    }
+    .signal-icon.buy  { background: rgba(0,255,136,0.15); color: var(--green); border: 1px solid var(--green); }
+    .signal-icon.sell { background: rgba(255,59,59,0.15); color: var(--red); border: 1px solid var(--red); }
+    .signal-info { flex: 1; min-width: 0; }
+    .signal-sym { font-family: var(--font-head); font-size: 13px; color: var(--cyan); }
+    .signal-meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+    .signal-price { font-family: var(--font-head); font-size: 13px; }
+
+    /* ═══════════════════════════════════════════════════
+       CHAT PANEL
+    ═══════════════════════════════════════════════════ */
+    .chat-messages {
+      flex: 1; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 10px;
+      padding-bottom: 8px;
+      max-height: 55vh;
+      scrollbar-width: thin; scrollbar-color: var(--cyan-dim) transparent;
+    }
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--cyan-dim); border-radius: 2px; }
+
+    .msg {
+      max-width: 85%;
+      padding: 10px 14px; border-radius: 16px;
+      font-size: 14px; line-height: 1.5;
+      animation: msgIn 0.2s ease;
+    }
+    @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .msg.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.08));
+      border: 1px solid rgba(0,212,255,0.3);
+      border-bottom-right-radius: 4px; color: var(--text);
+    }
+    .msg.jarvis {
+      align-self: flex-start;
+      background: rgba(0,18,40,0.8);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px; color: var(--text);
+    }
+    .msg.jarvis .msg-label {
+      font-family: var(--font-head); font-size: 9px; letter-spacing: 2px;
+      color: var(--cyan); margin-bottom: 4px;
+    }
+    .msg.jarvis .web-badge {
+      display: inline-block;
+      font-family: var(--font-head); font-size: 7px; letter-spacing: 1px;
+      color: var(--gold); border: 1px solid rgba(240,165,0,0.4);
+      border-radius: 4px; padding: 1px 5px; margin-left: 6px;
+      vertical-align: middle;
+    }
+    .msg.thinking .dots span {
+      display: inline-block;
+      animation: dot 1.4s infinite;
+    }
+    .msg.thinking .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .msg.thinking .dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dot { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+
+    .chat-input-row {
+      display: flex; gap: 8px;
+      padding-top: 8px;
+    }
+    .chat-input {
+      flex: 1;
+      background: rgba(0,18,40,0.8);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .chat-input:focus { border-color: var(--cyan); }
+    .chat-input::placeholder { color: var(--text-dim); }
+
+    .btn-icon {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--cyan-dim);
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; cursor: pointer;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .btn-icon:hover { background: rgba(0,212,255,0.3); box-shadow: 0 0 16px var(--cyan-glow); }
+    .btn-icon.recording {
+      background: rgba(255,59,59,0.2);
+      border-color: var(--red); color: var(--red);
+      animation: recPulse 1s ease-in-out infinite;
+    }
+    @keyframes recPulse {
+      0%, 100% { box-shadow: 0 0 8px rgba(255,59,59,0.6); }
+      50%       { box-shadow: 0 0 20px rgba(255,59,59,0.9); }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       TRADE PANEL
+    ═══════════════════════════════════════════════════ */
+    .trade-form { display: flex; flex-direction: column; gap: 12px; }
+    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-label {
+      font-family: var(--font-head); font-size: 9px; letter-spacing: 2px;
+      color: var(--text-dim); text-transform: uppercase;
+    }
+    .input-field {
+      background: rgba(0,18,40,0.8);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .input-field:focus { border-color: var(--cyan); }
+
+    .side-toggle {
+      display: flex; gap: 8px;
+    }
+    .side-btn {
+      flex: 1; padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      font-family: var(--font-head); font-size: 11px; letter-spacing: 2px;
+      color: var(--text-dim); cursor: pointer; transition: all 0.2s;
+    }
+    .side-btn.buy.active  { background: rgba(0,255,136,0.1); border-color: var(--green); color: var(--green); }
+    .side-btn.sell.active { background: rgba(255,59,59,0.1); border-color: var(--red); color: var(--red); }
+
+    .btn-primary {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, rgba(0,212,255,0.3), rgba(0,212,255,0.1));
+      border: 1px solid var(--cyan);
+      border-radius: var(--radius);
+      color: var(--cyan);
+      font-family: var(--font-head); font-size: 12px; letter-spacing: 3px;
+      cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+    }
+    .btn-primary:hover {
+      background: rgba(0,212,255,0.25);
+      box-shadow: 0 0 24px rgba(0,212,255,0.3);
+    }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .trade-preview {
+      background: rgba(0,212,255,0.05);
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 8px; padding: 12px;
+      font-size: 13px; display: none;
+    }
+    .trade-preview.show { display: block; }
+    .trade-preview .preview-row {
+      display: flex; justify-content: space-between;
+      padding: 4px 0; border-bottom: 1px solid rgba(0,212,255,0.08);
+    }
+    .trade-preview .preview-row:last-child { border: none; }
+
+    /* ═══════════════════════════════════════════════════
+       LOADING SKELETONS
+    ═══════════════════════════════════════════════════ */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(0,212,255,0.06) 25%, rgba(0,212,255,0.12) 50%, rgba(0,212,255,0.06) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px; height: 20px;
+    }
+    @keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+
+    /* ═══════════════════════════════════════════════════
+       TOAST NOTIFICATIONS
+    ═══════════════════════════════════════════════════ */
+    #toast-container {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+      width: calc(100% - 32px); max-width: 440px;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 12px 16px;
+      background: rgba(0,18,40,0.95);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      backdrop-filter: blur(16px);
+      animation: toastIn 0.3s ease, toastOut 0.3s ease 3s forwards;
+      border-left: 3px solid var(--cyan);
+    }
+    .toast.error { border-left-color: var(--red); }
+    .toast.success { border-left-color: var(--green); }
+    @keyframes toastIn  { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+    @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+
+    /* ═══════════════════════════════════════════════════
+       SCROLLABLE CONTENT AREA
+    ═══════════════════════════════════════════════════ */
+    .scroll-area { overflow-y: auto; flex: 1; }
+
+    /* ═══════════════════════════════════════════════════
+       WORLD PANEL — PALANTIR INTELLIGENCE MAP
+    ═══════════════════════════════════════════════════ */
+    #panel-world.active {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 50 !important;
+      padding: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      height: 100% !important;
+      overflow: hidden;
+      background: #000810;
+    }
+
+    #world-topbar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 50px;
+      background: rgba(0, 6, 16, 0.94);
+      border-bottom: 1px solid rgba(0,212,255,0.2);
+      display: flex; align-items: center;
+      z-index: 20;
+      backdrop-filter: blur(20px);
+      padding: 0 10px;
+      gap: 4px;
+    }
+
+    #world-back {
+      background: none;
+      border: 1px solid rgba(0,212,255,0.3);
+      border-radius: 6px;
+      color: var(--text-dim);
+      font-family: var(--font-head);
+      font-size: 8px; letter-spacing: 1.5px;
+      padding: 6px 10px;
+      cursor: pointer; transition: all 0.2s;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    #world-back:hover { color: var(--cyan); border-color: var(--cyan); }
+
+    .world-stat {
+      display: flex; flex-direction: column; gap: 0;
+      padding: 0 10px;
+      border-left: 1px solid rgba(0,212,255,0.15);
+      flex-shrink: 0;
+    }
+    .world-stat-label {
+      font-family: var(--font-head);
+      font-size: 6px; letter-spacing: 2px;
+      color: var(--text-dim); text-transform: uppercase;
+    }
+    .world-stat-value {
+      font-family: var(--font-head);
+      font-size: 13px; font-weight: 700;
+      color: var(--cyan);
+      text-shadow: 0 0 8px var(--cyan-glow);
+    }
+
+    #world-region-select {
+      margin-left: auto; flex-shrink: 0;
+      background: rgba(0,12,28,0.9);
+      border: 1px solid rgba(0,212,255,0.3);
+      border-radius: 6px;
+      color: var(--gold);
+      font-family: var(--font-head);
+      font-size: 8px; letter-spacing: 1px;
+      padding: 6px 8px;
+      cursor: pointer; outline: none;
+      -webkit-appearance: none;
+    }
+    #world-region-select option { background: #000814; color: var(--text); }
+
+    #world-map {
+      position: absolute;
+      top: 50px; left: 0; right: 0; bottom: 0;
+      z-index: 1;
+    }
+
+    /* Layer control panel */
+    #layer-panel {
+      position: absolute;
+      top: 62px; left: 10px;
+      z-index: 10;
+      background: rgba(0, 6, 18, 0.90);
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: var(--radius);
+      backdrop-filter: blur(20px);
+      padding: 10px 8px;
+      min-width: 155px;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+    #layer-panel.collapsed { transform: translateX(-175px); opacity: 0; pointer-events: none; }
+
+    #layer-panel-title {
+      font-family: var(--font-head);
+      font-size: 7px; letter-spacing: 2.5px;
+      color: var(--text-dim); text-transform: uppercase;
+      margin-bottom: 8px; padding-bottom: 6px;
+      border-bottom: 1px solid rgba(0,212,255,0.15);
+    }
+
+    .layer-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 4px; border-radius: 5px;
+      cursor: pointer; transition: background 0.15s;
+      font-size: 11px; color: var(--text-dim);
+      font-family: var(--font-body);
+      user-select: none;
+    }
+    .layer-item:hover { background: rgba(0,212,255,0.07); }
+    .layer-item.active { color: var(--text); }
+    .layer-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      border: 2px solid currentColor; flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .layer-item.active .layer-dot { background: currentColor; }
+
+    /* Layer panel toggle button */
+    #layer-toggle {
+      position: absolute;
+      top: 62px; left: 10px;
+      z-index: 11;
+      background: rgba(0,6,18,0.90);
+      border: 1px solid rgba(0,212,255,0.25);
+      border-radius: 8px;
+      color: var(--cyan);
+      width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; backdrop-filter: blur(16px);
+      font-size: 14px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    #layer-toggle.visible { opacity: 1; pointer-events: all; }
+
+    /* Event counter badge */
+    #world-event-counter {
+      position: absolute;
+      bottom: 12px; right: 12px;
+      z-index: 10;
+      background: rgba(0,6,18,0.90);
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: var(--radius);
+      backdrop-filter: blur(16px);
+      padding: 8px 12px;
+      font-family: var(--font-head);
+      font-size: 10px;
+    }
+    .event-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 2px 0; color: var(--text-dim); font-size: 10px;
+    }
+    .event-row .edot {
+      width: 8px; height: 8px; border-radius: 50%;
+      display: inline-block; flex-shrink: 0;
+    }
+
+    /* Leaflet dark theme overrides */
+    .leaflet-control-zoom a {
+      background: rgba(0,6,18,0.9) !important;
+      border-color: rgba(0,212,255,0.25) !important;
+      color: var(--cyan) !important;
+      font-family: var(--font-head) !important;
+    }
+    .leaflet-control-zoom a:hover { background: rgba(0,212,255,0.15) !important; }
+    .leaflet-control-attribution {
+      background: rgba(0,6,18,0.8) !important;
+      color: rgba(200,230,245,0.35) !important;
+      font-size: 9px !important;
+    }
+    .leaflet-control-attribution a { color: var(--cyan) !important; }
+    .leaflet-popup-content-wrapper {
+      background: rgba(0,6,18,0.96) !important;
+      border: 1px solid rgba(0,212,255,0.3) !important;
+      color: var(--text) !important;
+      border-radius: 10px !important;
+      box-shadow: 0 0 20px rgba(0,212,255,0.2) !important;
+    }
+    .leaflet-popup-tip { background: rgba(0,6,18,0.96) !important; }
+    .leaflet-popup-close-button { color: var(--text-dim) !important; }
+    .leaflet-container { background: #000810 !important; }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       RESPONSIVE — desktop wider
+    ═══════════════════════════════════════════════════ */
+    @media (min-width: 600px) {
+      #app { max-width: 700px; }
+      .card-value { font-size: 32px; }
+      nav button { font-size: 9px; letter-spacing: 1.5px; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div id="app">
+  <header>
+    <!-- Arc Reactor SVG -->
+    <div class="arc-reactor">
+      <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <circle class="outer-ring" cx="24" cy="24" r="22"/>
+        <circle class="inner-ring" cx="24" cy="24" r="15"/>
+        <line class="spoke" x1="24" y1="9" x2="24" y2="39"/>
+        <line class="spoke" x1="9" y1="24" x2="39" y2="24"/>
+        <line class="spoke" x1="13.4" y1="13.4" x2="34.6" y2="34.6"/>
+        <line class="spoke" x1="34.6" y1="13.4" x2="13.4" y2="34.6"/>
+        <circle class="core" cx="24" cy="24" r="6"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>JARVIS</h1>
+      <p>AI Imperium · Trading Intelligence</p>
+    </div>
+    <div class="status-dot" id="statusDot" title="System Status"></div>
+  </header>
+
+  <div class="scan-sep"></div>
+
+  <nav>
+    <button class="active" onclick="switchTab('market')" id="tab-market">Market</button>
+    <button onclick="switchTab('portfolio')" id="tab-portfolio">Depot</button>
+    <button onclick="switchTab('signals')" id="tab-signals">Signale</button>
+    <button onclick="switchTab('world')" id="tab-world">World</button>
+    <button onclick="switchTab('chat')" id="tab-chat">Jarvis</button>
+    <button onclick="switchTab('trade')" id="tab-trade">Trade</button>
+  </nav>
+
+  <!-- ══════════════════════════════════════
+       PANEL: MARKET
+  ══════════════════════════════════════ -->
+  <div class="panel active" id="panel-market">
+    <div class="card">
+      <div class="card-label">Portfolio Risk Status</div>
+      <div id="mkt-risk"><span class="skeleton" style="width:100px;height:26px;display:inline-block;"></span></div>
+      <div class="card-sub" id="mkt-value">Lade Daten…</div>
+    </div>
+
+    <div class="card-row">
+      <div class="card">
+        <div class="card-label">MC Median (5J)</div>
+        <div class="card-value" id="mkt-median">—</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Erw. CAGR</div>
+        <div class="card-value" id="mkt-cagr" style="color:var(--green)">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Aktive Alerts</div>
+      <div id="mkt-alerts" style="font-size:13px;color:var(--text-dim)">Lade…</div>
+    </div>
+
+    <button class="btn-primary" onclick="loadMarket()">↻ Aktualisieren</button>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL: PORTFOLIO
+  ══════════════════════════════════════ -->
+  <div class="panel" id="panel-portfolio">
+    <div class="card">
+      <div class="card-label">Portfolio Wert</div>
+      <div class="card-value" id="pf-value">—</div>
+      <div class="card-sub" id="pf-sub">—</div>
+    </div>
+
+    <div class="card-row">
+      <div class="card">
+        <div class="card-label">Cash</div>
+        <div class="card-value" id="pf-cash" style="font-size:20px">—</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Heute P&L</div>
+        <div class="card-value" id="pf-pl" style="font-size:20px">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Positionen</div>
+      <div id="pf-positions">
+        <div class="skeleton" style="height:18px;margin-bottom:8px"></div>
+        <div class="skeleton" style="height:18px;margin-bottom:8px"></div>
+        <div class="skeleton" style="height:18px"></div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="loadPortfolio()">↻ Aktualisieren</button>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL: SIGNALS
+  ══════════════════════════════════════ -->
+  <div class="panel" id="panel-signals">
+    <div class="card">
+      <div class="card-label">Letzte Trading-Signale</div>
+      <div id="signal-list" class="signal-feed" style="margin-top:8px">
+        <div class="skeleton" style="height:52px;margin-bottom:8px;border-radius:8px"></div>
+        <div class="skeleton" style="height:52px;margin-bottom:8px;border-radius:8px"></div>
+        <div class="skeleton" style="height:52px;border-radius:8px"></div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="loadSignals()">↻ Aktualisieren</button>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL: WORLD — PALANTIR INTEL MAP
+  ══════════════════════════════════════ -->
+  <div class="panel" id="panel-world">
+
+    <!-- Top status bar -->
+    <div id="world-topbar">
+      <button id="world-back" onclick="switchTab('market')">← BACK</button>
+      <div class="world-stat">
+        <span class="world-stat-label">Events</span>
+        <span class="world-stat-value" id="world-total">—</span>
+      </div>
+      <div class="world-stat">
+        <span class="world-stat-label">Updated</span>
+        <span class="world-stat-value" id="world-updated">—</span>
+      </div>
+      <div class="world-stat">
+        <span class="world-stat-label">EQ Alerts</span>
+        <span class="world-stat-value" id="world-eq-count" style="color:var(--gold)">—</span>
+      </div>
+      <select id="world-region-select" onchange="flyToRegion(this.value)">
+        <option value="global">◉ GLOBAL</option>
+        <option value="europe">EUROPE</option>
+        <option value="mideast">MIDDLE EAST</option>
+        <option value="asia">ASIA</option>
+        <option value="americas">AMERICAS</option>
+      </select>
+    </div>
+
+    <!-- Leaflet map -->
+    <div id="world-map"></div>
+
+    <!-- Layer toggle button (shown when panel collapsed) -->
+    <button id="layer-toggle" onclick="toggleLayerPanel()" title="Layers">☰</button>
+
+    <!-- Layer control panel -->
+    <div id="layer-panel">
+      <div id="layer-panel-title">INTEL LAYERS</div>
+      <div class="layer-item active" onclick="toggleLayer('earthquakes',this)" style="--lc:#00d4ff">
+        <span class="layer-dot" style="color:#00d4ff"></span> Natural Disasters
+      </div>
+      <div class="layer-item active" onclick="toggleLayer('conflicts',this)" style="--lc:#ff3b3b">
+        <span class="layer-dot" style="color:#ff3b3b"></span> Conflicts &amp; Wars
+      </div>
+      <div class="layer-item active" onclick="toggleLayer('hotspots',this)" style="--lc:#f0a500">
+        <span class="layer-dot" style="color:#f0a500"></span> Hotspots
+      </div>
+      <div class="layer-item" onclick="toggleLayer('nuclear',this)" style="--lc:#00ff88">
+        <span class="layer-dot" style="color:#00ff88"></span> Nuclear Sites
+      </div>
+      <div class="layer-item" onclick="toggleLayer('military',this)" style="--lc:#ff8800">
+        <span class="layer-dot" style="color:#ff8800"></span> Military Bases
+      </div>
+      <div style="border-top:1px solid rgba(0,212,255,0.12);margin-top:6px;padding-top:6px">
+        <div class="layer-item" onclick="toggleLayerPanel()" style="color:var(--text-dim);font-size:10px">
+          ← Collapse
+        </div>
+      </div>
+    </div>
+
+    <!-- Event counter overlay -->
+    <div id="world-event-counter">
+      <div class="event-row"><span class="edot" style="background:#00d4ff;animation:pulseDot 2s infinite"></span><span id="cnt-eq">— earthquakes</span></div>
+      <div class="event-row"><span class="edot" style="background:#ff3b3b;animation:pulseDot 2.3s infinite"></span><span id="cnt-conf">— conflict zones</span></div>
+      <div class="event-row"><span class="edot" style="background:#f0a500;animation:pulseDot 2.7s infinite"></span><span id="cnt-hot">— hotspots</span></div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL: JARVIS CHAT
+  ══════════════════════════════════════ -->
+  <div class="panel" id="panel-chat">
+    <div class="card" style="flex:1;display:flex;flex-direction:column;gap:0;">
+      <div class="card-label">Jarvis — KI Assistent
+        <span id="web-status" style="color:var(--text-dim);font-weight:normal;font-size:7px;letter-spacing:1px;margin-left:8px"></span>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="msg jarvis">
+          <div class="msg-label">JARVIS</div>
+          Good day, Herr Schiffer. Systems online. I have access to your portfolio and the internet. How may I be of service?
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chatInput" type="text" placeholder="Ask Jarvis…"
+               onkeydown="if(event.key==='Enter')sendChat()"/>
+        <button class="btn-icon" id="micBtn" onclick="toggleVoice()" title="Sprachbefehl">
+          🎙
+        </button>
+        <button class="btn-icon" onclick="sendChat()" title="Senden">
+          ➤
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       PANEL: TRADE
+  ══════════════════════════════════════ -->
+  <div class="panel" id="panel-trade">
+    <div class="card">
+      <div class="card-label">⚠ Paper Trading Mode</div>
+      <div style="font-size:13px;color:var(--gold);margin-top:4px">
+        Alle Orders gehen an Alpaca Paper Account ($100k virtuell).
+        Kein echtes Geld involviert.
+      </div>
+    </div>
+
+    <div class="card trade-form">
+      <div class="card-label">Market Order</div>
+
+      <div class="input-group">
+        <div class="input-label">Symbol</div>
+        <input class="input-field" id="t-symbol" type="text" placeholder="z.B. AAPL" maxlength="5"
+               style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase(); previewTrade()"/>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">Anzahl Aktien</div>
+        <input class="input-field" id="t-qty" type="number" placeholder="1" min="1" oninput="previewTrade()"/>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">Richtung</div>
+        <div class="side-toggle">
+          <button class="side-btn buy active" id="side-buy" onclick="setSide('buy')">KAUFEN</button>
+          <button class="side-btn sell" id="side-sell" onclick="setSide('sell')">VERKAUFEN</button>
+        </div>
+      </div>
+
+      <div class="trade-preview" id="tradePreview">
+        <div class="preview-row"><span style="color:var(--text-dim)">Symbol</span><span id="prev-sym">—</span></div>
+        <div class="preview-row"><span style="color:var(--text-dim)">Stückzahl</span><span id="prev-qty">—</span></div>
+        <div class="preview-row"><span style="color:var(--text-dim)">Kurs ca.</span><span id="prev-price">—</span></div>
+        <div class="preview-row"><span style="color:var(--text-dim)">Gesamt ca.</span><span id="prev-total" style="font-family:var(--font-head)">—</span></div>
+      </div>
+
+      <button class="btn-primary" id="tradeBtn" onclick="executeTrade()" disabled>
+        ORDER ABSCHICKEN
+      </button>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ══════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════ -->
+<script>
+// ── Session ID (persists across page reloads within same tab) ───────────────
+const SESSION_ID = (() => {
+  let id = sessionStorage.getItem('jarvis_sid');
+  if (!id) {
+    id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+    sessionStorage.setItem('jarvis_sid', id);
+  }
+  return id;
+})();
+
+// ── Config ─────────────────────────────────────────────────────────────────
+const API = window.location.origin;
+let   WS  = null;
+let   currentSide = 'buy';
+let   isRecording = false;
+let   recognition = null;
+
+// ── Tab switching ───────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+
+  if (name === 'market')    loadMarket();
+  if (name === 'portfolio') loadPortfolio();
+  if (name === 'signals')   loadSignals();
+  if (name === 'chat')      initWS();
+  if (name === 'world')     setTimeout(initWorldMap, 80);
+}
+
+// ── Health check ────────────────────────────────────────────────────────────
+async function checkHealth() {
+  try {
+    const r = await fetch(API + '/health', {signal: AbortSignal.timeout(5000)});
+    document.getElementById('statusDot').className = r.ok ? 'status-dot' : 'status-dot offline';
+  } catch {
+    document.getElementById('statusDot').className = 'status-dot offline';
+  }
+}
+
+// ── MARKET ──────────────────────────────────────────────────────────────────
+async function loadMarket() {
+  try {
+    const r = await fetch(API + '/api/market');
+    if (!r.ok) { showToast('Noch kein Report — Predictor ausführen', 'error'); return; }
+    const d = await r.json();
+
+    const risk = d.risk || {};
+    const mc   = d.monte_carlo || {};
+
+    const status = (risk.overall_status || 'UNKNOWN').toUpperCase();
+    const cls = status === 'GREEN' ? 'green' : status === 'RED' ? 'red' : 'yellow';
+    document.getElementById('mkt-risk').innerHTML =
+      `<span class="risk-badge ${cls}">${status}</span>`;
+
+    const val = risk.portfolio_value ? '$' + num(risk.portfolio_value) : '—';
+    document.getElementById('mkt-value').textContent = 'Portfolio: ' + val;
+
+    document.getElementById('mkt-median').textContent =
+      mc.median_end_value ? '$' + num(mc.median_end_value) : '—';
+    document.getElementById('mkt-cagr').textContent =
+      mc.expected_cagr ? (mc.expected_cagr * 100).toFixed(1) + '%' : '—';
+
+    const alerts = risk.alerts || [];
+    if (alerts.length === 0) {
+      document.getElementById('mkt-alerts').innerHTML =
+        '<span style="color:var(--green)">✓ Keine aktiven Alerts</span>';
+    } else {
+      document.getElementById('mkt-alerts').innerHTML =
+        alerts.map(a => `<div style="margin-bottom:6px;color:var(--gold)">⚠ ${a}</div>`).join('');
+    }
+  } catch(e) {
+    showToast('API nicht erreichbar', 'error');
+  }
+}
+
+// ── PORTFOLIO ────────────────────────────────────────────────────────────────
+async function loadPortfolio() {
+  try {
+    const r = await fetch(API + '/api/portfolio');
+    if (!r.ok) {
+      const err = await r.json().catch(()=>({}));
+      showToast(err.detail || 'Portfolio-Fehler', 'error');
+      return;
+    }
+    const d = await r.json();
+    const a = d.account;
+
+    document.getElementById('pf-value').textContent = '$' + num(a.portfolio_value);
+    const paperTag = a.paper ? ' <span style="font-size:10px;color:var(--gold)">[PAPER]</span>' : '';
+    document.getElementById('pf-sub').innerHTML = 'Status: ' + a.status + paperTag;
+
+    document.getElementById('pf-cash').textContent = '$' + num(a.cash);
+
+    const pl = a.day_pl;
+    const plEl = document.getElementById('pf-pl');
+    plEl.textContent = (pl >= 0 ? '+' : '') + '$' + num(Math.abs(pl));
+    plEl.style.color = pl >= 0 ? 'var(--green)' : 'var(--red)';
+
+    const pos = d.positions || [];
+    if (pos.length === 0) {
+      document.getElementById('pf-positions').innerHTML =
+        '<span style="color:var(--text-dim);font-size:13px">Keine offenen Positionen</span>';
+    } else {
+      const rows = pos.map(p => {
+        const plCls = p.unrealized_pl >= 0 ? 'pos' : 'neg';
+        const plSign = p.unrealized_pl >= 0 ? '+' : '';
+        const plPct = (p.unrealized_plpc * 100).toFixed(1);
+        return `<tr>
+          <td class="sym">${p.symbol}</td>
+          <td>${p.qty.toFixed(0)}</td>
+          <td>$${p.current_price.toFixed(2)}</td>
+          <td class="${plCls}">${plSign}$${Math.abs(p.unrealized_pl).toFixed(0)}<br>
+            <span style="font-size:11px">${plSign}${plPct}%</span></td>
+        </tr>`;
+      }).join('');
+      document.getElementById('pf-positions').innerHTML =
+        `<table class="pos-table">
+          <thead><tr><th>Symbol</th><th>Qty</th><th>Preis</th><th>P&L</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+  } catch(e) {
+    showToast('API nicht erreichbar', 'error');
+  }
+}
+
+// ── SIGNALS ──────────────────────────────────────────────────────────────────
+async function loadSignals() {
+  try {
+    const r = await fetch(API + '/api/signals');
+    const d = await r.json();
+    const signals = d.signals || [];
+    const el = document.getElementById('signal-list');
+    if (signals.length === 0) {
+      el.innerHTML = '<div style="color:var(--text-dim);font-size:13px">Noch keine Signale aufgezeichnet.</div>';
+      return;
+    }
+    el.innerHTML = signals.map(s => {
+      const side = (s.side || s.action || 'buy').toLowerCase();
+      const isBuy = side === 'buy';
+      return `<div class="signal-item">
+        <div class="signal-icon ${side}">${isBuy ? 'B' : 'S'}</div>
+        <div class="signal-info">
+          <div class="signal-sym">${s.symbol || '—'}</div>
+          <div class="signal-meta">${s.strategy || ''} · ${formatTime(s.timestamp || s.time)}</div>
+        </div>
+        <div class="signal-price" style="color:${isBuy?'var(--green)':'var(--red)'}">
+          ${s.price ? '$' + (+s.price).toFixed(2) : '—'}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    showToast('Signal-Abruf fehlgeschlagen', 'error');
+  }
+}
+
+// ── WEBSOCKET CHAT ────────────────────────────────────────────────────────────
+function initWS() {
+  if (WS && WS.readyState === WebSocket.OPEN) return;
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  WS = new WebSocket(`${proto}://${location.host}/ws/jarvis`);
+  WS.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    removeThinking();
+    if (data.type === 'chat') {
+      addMsg('jarvis', data.reply, false);
+    } else if (data.type === 'market_report') {
+      addMsg('jarvis',
+        `Portfolio: $${num(data.portfolio_value)} — Status: ${data.status}\n` +
+        `MC Median: $${num(data.mc_median)} | CAGR: ${(data.mc_cagr*100).toFixed(1)}%\n` +
+        (data.alerts && data.alerts.length ? `⚠ ${data.alerts[0]}` : '✓ Keine Alerts'), false
+      );
+    } else if (data.type === 'error') {
+      addMsg('jarvis', '⚠ ' + data.message, false);
+    }
+  };
+  WS.onerror = () => showToast('WebSocket Verbindungsfehler', 'error');
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  addMsg('user', msg, false);
+  addThinking();
+
+  if (WS && WS.readyState === WebSocket.OPEN) {
+    WS.send(JSON.stringify({ message: msg, session_id: SESSION_ID }));
+  } else {
+    try {
+      const r = await fetch(API + '/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: msg, lang: 'de', session_id: SESSION_ID }),
+      });
+      const d = await r.json();
+      removeThinking();
+      addMsg('jarvis', d.reply || '…', d.web_search);
+    } catch {
+      removeThinking();
+      addMsg('jarvis', '⚠ Connection to server failed.', false);
+    }
+  }
+}
+
+function addMsg(role, text, webSearch) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + role;
+  if (role === 'jarvis') {
+    const badge = webSearch ? '<span class="web-badge">WEB</span>' : '';
+    el.innerHTML = `<div class="msg-label">JARVIS${badge}</div>${escHtml(text)}`;
+  } else {
+    el.textContent = text;
+  }
+  const container = document.getElementById('chatMessages');
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function addThinking() {
+  const el = document.createElement('div');
+  el.className = 'msg jarvis thinking'; el.id = 'thinking-indicator';
+  el.innerHTML = `<div class="msg-label">JARVIS</div><div class="dots"><span>●</span><span>●</span><span>●</span></div>`;
+  const c = document.getElementById('chatMessages');
+  c.appendChild(el); c.scrollTop = c.scrollHeight;
+}
+
+function removeThinking() {
+  const el = document.getElementById('thinking-indicator');
+  if (el) el.remove();
+}
+
+// ── VOICE INPUT ──────────────────────────────────────────────────────────────
+function toggleVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Spracherkennung wird auf diesem Gerät nicht unterstützt', 'error');
+    return;
+  }
+  if (isRecording) {
+    recognition && recognition.stop();
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'de-DE';
+  recognition.interimResults = false;
+  recognition.onresult = (e) => {
+    const text = e.results[0][0].transcript;
+    document.getElementById('chatInput').value = text;
+    sendChat();
+  };
+  recognition.onend = () => {
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+  };
+  recognition.onerror = (e) => {
+    showToast('Mikrofon-Fehler: ' + e.error, 'error');
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+  };
+  recognition.start();
+  isRecording = true;
+  document.getElementById('micBtn').classList.add('recording');
+}
+
+// ── TRADE ────────────────────────────────────────────────────────────────────
+let tradeSide = 'buy';
+
+function setSide(side) {
+  tradeSide = side;
+  document.getElementById('side-buy').classList.toggle('active', side === 'buy');
+  document.getElementById('side-sell').classList.toggle('active', side === 'sell');
+  previewTrade();
+}
+
+async function previewTrade() {
+  const sym = document.getElementById('t-symbol').value.trim().toUpperCase();
+  const qty = parseInt(document.getElementById('t-qty').value) || 0;
+  const btn = document.getElementById('tradeBtn');
+  const prev = document.getElementById('tradePreview');
+
+  if (!sym || qty < 1) { btn.disabled = true; prev.classList.remove('show'); return; }
+
+  prev.classList.add('show');
+  document.getElementById('prev-sym').textContent = sym;
+  document.getElementById('prev-qty').textContent = qty;
+  document.getElementById('prev-price').textContent = 'Lade…';
+  document.getElementById('prev-total').textContent = 'Lade…';
+  btn.disabled = true;
+
+  try {
+    const r = await fetch(API + '/api/trade', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ symbol: sym, qty, side: tradeSide, confirmed: false }),
+    });
+    const d = await r.json();
+    if (d.preview) {
+      document.getElementById('prev-price').textContent = '$' + (+d.est_price).toFixed(2);
+      document.getElementById('prev-total').textContent = '$' + num(d.est_total);
+      btn.disabled = false;
+    }
+  } catch {
+    document.getElementById('prev-price').textContent = 'Fehler';
+    document.getElementById('prev-total').textContent = '—';
+  }
+}
+
+async function executeTrade() {
+  const sym = document.getElementById('t-symbol').value.trim().toUpperCase();
+  const qty = parseInt(document.getElementById('t-qty').value);
+  if (!sym || !qty) return;
+
+  const btn = document.getElementById('tradeBtn');
+  btn.disabled = true;
+  btn.textContent = 'SENDE…';
+
+  try {
+    const r = await fetch(API + '/api/trade', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ symbol: sym, qty, side: tradeSide, confirmed: true }),
+    });
+    const d = await r.json();
+    if (d.success) {
+      showToast(`✓ Order ausgeführt — ${d.side.toUpperCase()} ${d.qty} ${d.symbol}`, 'success');
+      document.getElementById('t-symbol').value = '';
+      document.getElementById('t-qty').value = '';
+      document.getElementById('tradePreview').classList.remove('show');
+    } else {
+      showToast('Order fehlgeschlagen', 'error');
+    }
+  } catch {
+    showToast('Verbindungsfehler', 'error');
+  }
+
+  btn.textContent = 'ORDER ABSCHICKEN';
+  btn.disabled = false;
+}
+
+// ════════════════════════════════════════════════════
+//  WORLD MAP — PALANTIR INTELLIGENCE DASHBOARD
+// ════════════════════════════════════════════════════
+let worldMap = null;
+let worldInited = false;
+let worldLayers = {};
+let layerPanelOpen = true;
+
+const REGION_VIEWS = {
+  global:   { center: [20, 10],   zoom: 2 },
+  europe:   { center: [54, 15],   zoom: 4 },
+  mideast:  { center: [28, 43],   zoom: 5 },
+  asia:     { center: [28, 104],  zoom: 3 },
+  americas: { center: [10, -75],  zoom: 3 },
+};
+
+function initWorldMap() {
+  if (worldInited) { worldMap && worldMap.invalidateSize(); return; }
+  worldInited = true;
+
+  worldMap = L.map('world-map', {
+    center: [20, 10], zoom: 2,
+    zoomControl: true,
+    attributionControl: true,
+    minZoom: 2,
+  });
+
+  // CartoDB Dark Matter — perfect Palantir look
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 18,
+  }).addTo(worldMap);
+
+  // Initialize layer groups (3 on by default, 2 off)
+  worldLayers = {
+    earthquakes: L.layerGroup().addTo(worldMap),
+    conflicts:   L.layerGroup().addTo(worldMap),
+    hotspots:    L.layerGroup().addTo(worldMap),
+    nuclear:     L.layerGroup(),
+    military:    L.layerGroup(),
+  };
+
+  loadEarthquakeFeed();
+  loadStaticIntelLayers();
+}
+
+async function loadEarthquakeFeed() {
+  try {
+    const r = await fetch(
+      'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson'
+    );
+    const data = await r.json();
+    const features = (data.features || []).slice(0, 80); // cap for performance
+
+    features.forEach(f => {
+      const [lng, lat, depth] = f.geometry.coordinates;
+      const mag   = f.properties.mag || 4.5;
+      const place = f.properties.place || 'Unknown';
+      const time  = new Date(f.properties.time).toLocaleString('de-DE', {
+        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+
+      const color  = mag >= 7 ? '#ff3b3b' : mag >= 6 ? '#f0a500' : '#00d4ff';
+      const radius = Math.min(Math.pow(1.8, mag - 3) * 4, 22);
+
+      const circle = L.circleMarker([lat, lng], {
+        radius,
+        fillColor: color, color,
+        weight: 1.5, opacity: 0.9, fillOpacity: 0.35,
+      });
+
+      circle.bindPopup(`
+        <div style="font-family:'Rajdhani',sans-serif;min-width:180px">
+          <div style="font-family:'Orbitron',monospace;font-size:10px;color:${color};letter-spacing:2px;margin-bottom:6px">🌋 EARTHQUAKE</div>
+          <strong>M${mag.toFixed(1)}</strong> — ${escHtml(place)}<br>
+          <span style="color:rgba(200,230,245,0.5);font-size:12px">Depth: ${(+depth).toFixed(0)} km · ${time}</span>
+        </div>
+      `);
+
+      circle.addTo(worldLayers.earthquakes);
+    });
+
+    const count = features.length;
+    document.getElementById('world-total').textContent = count;
+    document.getElementById('world-eq-count').textContent = count;
+    document.getElementById('world-updated').textContent =
+      new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+    document.getElementById('cnt-eq').textContent = count + ' earthquakes';
+
+  } catch(e) {
+    console.warn('USGS feed error:', e);
+    document.getElementById('world-updated').textContent = 'offline';
+  }
+}
+
+function loadStaticIntelLayers() {
+  // ── Active Conflict Zones ────────────────────────────────────────────────
+  const conflicts = [
+    { lat: 48.5,  lng: 35.0,  name: 'Ukraine–Russia War',    severity: 'high',   desc: 'Ongoing since Feb 2022' },
+    { lat: 31.5,  lng: 34.5,  name: 'Gaza / Israel Conflict', severity: 'high',   desc: 'Active operations' },
+    { lat: 15.3,  lng: 39.5,  name: 'Sudan Civil War',         severity: 'high',   desc: 'SAF vs RSF' },
+    { lat: 15.0,  lng: 44.0,  name: 'Yemen War',               severity: 'high',   desc: 'Houthi / coalition' },
+    { lat: 12.6,  lng: 41.5,  name: 'Ethiopia (Amhara)',        severity: 'medium', desc: 'Internal conflict' },
+    { lat: 13.0,  lng:  2.0,  name: 'Sahel Insurgency',         severity: 'medium', desc: 'Mali / Burkina Faso / Niger' },
+    { lat:  5.0,  lng: 26.0,  name: 'DRC Conflict',             severity: 'medium', desc: 'Eastern provinces' },
+    { lat: 35.0,  lng: 38.5,  name: 'Syria',                    severity: 'medium', desc: 'Residual conflict' },
+    { lat:  3.0,  lng: 37.0,  name: 'South Sudan',              severity: 'medium', desc: 'Inter-community violence' },
+    { lat: 16.0,  lng:  0.0,  name: 'Niger / Mali Border',       severity: 'medium', desc: 'Jihadist activity' },
+  ];
+
+  conflicts.forEach(c => {
+    const color  = c.severity === 'high' ? '#ff3b3b' : '#e06020';
+    const radius = c.severity === 'high' ? 13 : 8;
+    const marker = L.circleMarker([c.lat, c.lng], {
+      radius, fillColor: color, color,
+      weight: 2, opacity: 1, fillOpacity: 0.25,
+    });
+    marker.bindPopup(`
+      <div style="font-family:'Rajdhani',sans-serif;min-width:180px">
+        <div style="font-family:'Orbitron',monospace;font-size:10px;color:#ff3b3b;letter-spacing:2px;margin-bottom:6px">🔴 CONFLICT</div>
+        <strong>${escHtml(c.name)}</strong><br>
+        <span style="color:rgba(200,230,245,0.5);font-size:12px">${escHtml(c.desc)}</span>
+      </div>
+    `);
+    marker.addTo(worldLayers.conflicts);
+  });
+
+  document.getElementById('cnt-conf').textContent = conflicts.length + ' conflict zones';
+
+  // ── Strategic Hotspots ───────────────────────────────────────────────────
+  const hotspots = [
+    { lat: 23.5,  lng: 120.5,  name: 'Taiwan Strait',           desc: 'PRC-Taiwan military tensions' },
+    { lat: 37.5,  lng: 127.0,  name: 'Korean Peninsula',         desc: 'DPRK ballistic missile activity' },
+    { lat: 26.5,  lng:  56.5,  name: 'Strait of Hormuz',         desc: '20% global oil transit — critical chokepoint' },
+    { lat: 12.5,  lng:  44.0,  name: 'Red Sea / Bab el-Mandeb',  desc: 'Houthi anti-shipping operations' },
+    { lat: 10.5,  lng: 106.5,  name: 'South China Sea',           desc: 'Territorial disputes — multiple claimants' },
+    { lat: 35.0,  lng:  33.0,  name: 'Eastern Mediterranean',     desc: 'Regional tensions — Turkey / Greece / Cyprus' },
+    { lat: 34.5,  lng:  72.0,  name: 'Kashmir LoC',               desc: 'India-Pakistan line of control' },
+    { lat:  4.5,  lng:  -7.5,  name: 'Gulf of Guinea',            desc: 'Piracy hotspot' },
+    { lat: 60.0,  lng:  20.0,  name: 'Baltic Sea',                desc: 'NATO-Russia proximity — heightened patrols' },
+    { lat: 15.0,  lng:  51.5,  name: 'Gulf of Aden',              desc: 'Shipping disruption zone' },
+  ];
+
+  hotspots.forEach(h => {
+    const marker = L.circleMarker([h.lat, h.lng], {
+      radius: 7, fillColor: '#f0a500', color: '#f0a500',
+      weight: 2, opacity: 1, fillOpacity: 0.2, dashArray: '5 3',
+    });
+    marker.bindPopup(`
+      <div style="font-family:'Rajdhani',sans-serif;min-width:190px">
+        <div style="font-family:'Orbitron',monospace;font-size:10px;color:#f0a500;letter-spacing:2px;margin-bottom:6px">⚡ HOTSPOT</div>
+        <strong>${escHtml(h.name)}</strong><br>
+        <span style="color:rgba(200,230,245,0.5);font-size:12px">${escHtml(h.desc)}</span>
+      </div>
+    `);
+    marker.addTo(worldLayers.hotspots);
+  });
+
+  document.getElementById('cnt-hot').textContent = hotspots.length + ' hotspots';
+
+  // ── Nuclear Sites ────────────────────────────────────────────────────────
+  const nuclearSites = [
+    { lat: 39.7,  lng: 125.7,  name: 'Yongbyon Nuclear Complex',   country: 'DPRK' },
+    { lat: 32.5,  lng:  51.7,  name: 'Isfahan Nuclear Facility',    country: 'Iran' },
+    { lat: 32.0,  lng:  56.5,  name: 'Natanz Enrichment Plant',     country: 'Iran' },
+    { lat: 30.5,  lng:  67.0,  name: 'Khushab Plutonium Reactor',   country: 'Pakistan' },
+    { lat: 28.9,  lng:  50.9,  name: 'Bushehr Nuclear Plant',       country: 'Iran' },
+    { lat: 36.0,  lng:  36.5,  name: 'Latakia (alleged)',           country: 'Syria' },
+  ];
+
+  nuclearSites.forEach(n => {
+    const marker = L.circleMarker([n.lat, n.lng], {
+      radius: 7, fillColor: '#00ff88', color: '#00ff88',
+      weight: 2, opacity: 1, fillOpacity: 0.25,
+    });
+    marker.bindPopup(`
+      <div style="font-family:'Rajdhani',sans-serif;min-width:170px">
+        <div style="font-family:'Orbitron',monospace;font-size:10px;color:#00ff88;letter-spacing:2px;margin-bottom:6px">☢️ NUCLEAR</div>
+        <strong>${escHtml(n.name)}</strong><br>
+        <span style="color:rgba(200,230,245,0.5);font-size:12px">${escHtml(n.country)}</span>
+      </div>
+    `);
+    marker.addTo(worldLayers.nuclear);
+  });
+
+  // ── Major Military Bases ─────────────────────────────────────────────────
+  const militaryBases = [
+    { lat: 37.0,  lng:  35.4,  name: 'Incirlik Air Base',       country: 'Turkey / NATO' },
+    { lat: 26.2,  lng:  50.6,  name: 'NSA Bahrain (5th Fleet)',  country: 'USA' },
+    { lat: 11.5,  lng:  43.1,  name: 'Camp Lemonnier',           country: 'USA / Djibouti' },
+    { lat:  1.35, lng: 103.8,  name: 'Changi Naval Base',         country: 'Singapore' },
+    { lat: -7.3,  lng:  72.4,  name: 'Diego Garcia',              country: 'USA / UK' },
+    { lat: 36.8,  lng:  -5.6,  name: 'Rota Naval Station',        country: 'USA / Spain' },
+    { lat: 25.1,  lng:  55.4,  name: 'Al Minhad Air Base',        country: 'UAE / coalition' },
+    { lat: 27.8,  lng:  68.8,  name: 'Jacobabad Air Base',         country: 'Pakistan / CJTF' },
+    { lat: 43.8,  lng: 132.9,  name: 'Vladivostok Pacific Fleet',  country: 'Russia' },
+    { lat: 22.3,  lng: 114.2,  name: 'PLA Southern Theater HQ',    country: 'China' },
+  ];
+
+  militaryBases.forEach(m => {
+    const marker = L.circleMarker([m.lat, m.lng], {
+      radius: 6, fillColor: '#ff8800', color: '#ff8800',
+      weight: 2, opacity: 0.9, fillOpacity: 0.3,
+    });
+    marker.bindPopup(`
+      <div style="font-family:'Rajdhani',sans-serif;min-width:170px">
+        <div style="font-family:'Orbitron',monospace;font-size:10px;color:#ff8800;letter-spacing:2px;margin-bottom:6px">🟠 MILITARY BASE</div>
+        <strong>${escHtml(m.name)}</strong><br>
+        <span style="color:rgba(200,230,245,0.5);font-size:12px">${escHtml(m.country)}</span>
+      </div>
+    `);
+    marker.addTo(worldLayers.military);
+  });
+}
+
+function toggleLayer(name, el) {
+  if (!worldMap || !worldLayers[name]) return;
+  const layer = worldLayers[name];
+  if (worldMap.hasLayer(layer)) {
+    worldMap.removeLayer(layer);
+    el.classList.remove('active');
+  } else {
+    worldMap.addLayer(layer);
+    el.classList.add('active');
+  }
+}
+
+function toggleLayerPanel() {
+  layerPanelOpen = !layerPanelOpen;
+  document.getElementById('layer-panel').classList.toggle('collapsed', !layerPanelOpen);
+  document.getElementById('layer-toggle').classList.toggle('visible', !layerPanelOpen);
+}
+
+function flyToRegion(region) {
+  if (!worldMap) return;
+  const v = REGION_VIEWS[region] || REGION_VIEWS.global;
+  worldMap.flyTo(v.center, v.zoom, { duration: 1.5, easeLinearity: 0.25 });
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function num(n) {
+  if (!n && n !== 0) return '—';
+  return (+n).toLocaleString('de-DE', {maximumFractionDigits: 0});
+}
+
+function formatTime(ts) {
+  if (!ts) return '';
+  try {
+    return new Date(ts).toLocaleString('de-DE', {
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+  } catch { return ts; }
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function showToast(msg, type = '') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+checkHealth();
+setInterval(checkHealth, 30000);
+loadMarket();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
