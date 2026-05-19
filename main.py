@@ -252,44 +252,9 @@ async def submit_trade(req: TradeRequest):
         raise HTTPException(500, str(e))
 
 
-_SEARCH_KEYWORDS = {
-    "news", "aktuell", "heute", "today", "latest", "current", "now", "jetzt",
-    "price", "preis", "weather", "wetter", "trump", "market", "markt",
-    "bitcoin", "crypto", "krypto", "aktie", "stock", "oil", "gold",
-    "earthquake", "erdbeben", "war", "krieg", "election", "wahl",
-    "who won", "winner", "score", "result", "ergebnis", "breaking",
-}
-
-
-def _needs_web_search(message: str) -> bool:
-    lower = message.lower()
-    return any(kw in lower for kw in _SEARCH_KEYWORDS)
-
-
-def _tavily_search(query: str) -> tuple[str, bool]:
-    """Search the web via Tavily. Returns (formatted_results, did_search)."""
-    key = os.environ.get("TAVILY_API_KEY", "")
-    if not key:
-        return "", False
-    try:
-        from tavily import TavilyClient
-        tc = TavilyClient(api_key=key)
-        results = tc.search(query, max_results=4, search_depth="basic")
-        parts = []
-        for r in results.get("results", []):
-            title   = r.get("title", "")
-            url     = r.get("url", "")
-            content = r.get("content", "")[:400]
-            parts.append(f"**{title}**\n{content}\nSource: {url}")
-        return "\n\n---\n\n".join(parts), bool(parts)
-    except Exception as e:
-        logger.warning(f"Tavily search failed: {e}")
-        return "", False
-
-
 @app.post("/api/chat")
 async def jarvis_chat(req: ChatRequest):
-    """Jarvis LLM-Chat with session memory and optional web search."""
+    """Jarvis LLM-Chat with session memory and Tavily MCP (search + extract + crawl)."""
     try:
         import anthropic
         client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
@@ -300,18 +265,7 @@ async def jarvis_chat(req: ChatRequest):
             _sessions[sid] = []
         history = _sessions[sid]
 
-        # ── Web search decision ───────────────────────────────────────────────
-        user_content  = req.message
-        web_searched  = False
-        if _needs_web_search(req.message):
-            web_results, web_searched = _tavily_search(req.message)
-            if web_results:
-                user_content = (
-                    f"{req.message}\n\n"
-                    f"[JARVIS INTELLIGENCE FEED — Live Web Data]\n{web_results}"
-                )
-
-        history.append({"role": "user", "content": user_content})
+        history.append({"role": "user", "content": req.message})
         working_history = history[-(_MAX_HISTORY * 2):]
 
         # ── System prompt — JARVIS personality ───────────────────────────────
@@ -320,11 +274,9 @@ async def jarvis_chat(req: ChatRequest):
         if risk:
             status = risk.get("overall_status", "?")
             value  = risk.get("portfolio_value", 0)
-            risk_context = (
-                f" Current portfolio: ${value:,.0f}, risk status: {status}."
-            )
+            risk_context = f" Current portfolio: ${value:,.0f}, risk status: {status}."
 
-        tavily_live = bool(os.environ.get("TAVILY_API_KEY"))
+        tavily_key = os.environ.get("TAVILY_API_KEY", "")
         system = (
             "You are JARVIS — Just A Rather Very Intelligent System — the personal AI of "
             "Herr Florian Schiffer, quantitative trader and AI engineer. "
@@ -333,28 +285,62 @@ async def jarvis_chat(req: ChatRequest):
             "You have access to his trading system (The Predictor) and portfolio."
             + (risk_context if risk_context else "")
             + (
-                " You are connected to the internet. When you receive a "
-                "[JARVIS INTELLIGENCE FEED] block, synthesise the data naturally "
-                "and cite sources with 'Source: URL'."
-                if tavily_live else
-                " Note: internet access is currently offline — no live data available."
+                " You are connected to the internet via Tavily. Use the search tool for "
+                "current events, prices, and news. Use the extract tool whenever the user "
+                "provides a URL — read the page and summarise it. Cite sources as 'Source: URL'."
+                if tavily_key else
+                " Note: internet access is currently offline."
             )
             + " Respond in German unless the user writes in English. Be concise."
         )
 
-        resp = client.messages.create(
-            model      = "claude-sonnet-4-6",
-            max_tokens = 800,
-            system     = system,
-            messages   = working_history,
-        )
-        reply = resp.content[0].text
+        # ── Call Claude (with or without Tavily MCP) ─────────────────────────
+        mcp_used = False
+
+        if tavily_key:
+            tavily_mcp_url = f"https://mcp.tavily.com/mcp/?tavilyApiKey={tavily_key}"
+            resp = client.beta.messages.create(
+                model      = "claude-sonnet-4-6",
+                max_tokens = 1024,
+                system     = system,
+                messages   = working_history,
+                mcp_servers = [
+                    {
+                        "type": "url",
+                        "url":  tavily_mcp_url,
+                        "name": "tavily",
+                    }
+                ],
+                tools = [
+                    {
+                        "type":            "mcp_toolset",
+                        "mcp_server_name": "tavily",
+                    }
+                ],
+                betas = ["mcp-client-2025-11-20"],
+            )
+            reply = ""
+            for block in resp.content:
+                if getattr(block, "type", None) == "text":
+                    reply = block.text
+                elif getattr(block, "type", None) == "mcp_tool_use":
+                    mcp_used = True
+            if not reply:
+                reply = "I do apologise, sir — the response contained no text output."
+        else:
+            resp = client.messages.create(
+                model      = "claude-sonnet-4-6",
+                max_tokens = 800,
+                system     = system,
+                messages   = working_history,
+            )
+            reply = resp.content[0].text
 
         history.append({"role": "assistant", "content": reply})
         if len(history) > _MAX_HISTORY * 2:
             _sessions[sid] = history[-(_MAX_HISTORY * 2):]
 
-        return {"reply": reply, "session_id": sid, "web_search": web_searched}
+        return {"reply": reply, "session_id": sid, "web_search": mcp_used}
 
     except Exception as e:
         logger.error(f"Chat error: {e}")
