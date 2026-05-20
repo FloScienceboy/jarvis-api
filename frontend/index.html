@@ -293,6 +293,57 @@
     .leaflet-container { background: #000810 !important; }
     @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:.3} }
 
+    /* ══ FLIGHTS PANEL ══════════════════════════════════════════════════════ */
+    .flights-search-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+    .flights-search-form .input-group { flex: 1; min-width: 130px; }
+    .flights-search-form .btn-search { flex-shrink: 0; padding: 14px 22px; white-space: nowrap; }
+
+    .night-slider { -webkit-appearance:none; appearance:none; height:4px; background:rgba(0,212,255,0.2); border-radius:2px; outline:none; cursor:pointer; width:100%; margin-top:10px; }
+    .night-slider::-webkit-slider-thumb { -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:var(--cyan); cursor:pointer; box-shadow:0 0 8px var(--cyan-glow); }
+    .night-slider::-moz-range-thumb { width:16px; height:16px; border-radius:50%; background:var(--cyan); cursor:pointer; border:none; }
+
+    .flights-grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+    @media (min-width: 800px) { .flights-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1200px) { .flights-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .flight-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; backdrop-filter: blur(16px); position: relative; overflow: hidden; transition: border-color .2s, transform .15s; display: flex; flex-direction: column; }
+    .flight-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background: linear-gradient(90deg, transparent, rgba(0,212,255,0.35), transparent); }
+    .flight-card:hover { border-color: rgba(0,212,255,0.45); transform: translateY(-2px); }
+    .deal-badge { display: inline-block; background: linear-gradient(135deg,#00ff88,#00d4ff); color:#000814; font-family: var(--font-head); font-size:8px; letter-spacing:1.5px; padding:3px 9px; border-radius:4px; margin-bottom:9px; font-weight:700; align-self:flex-start; }
+    .flight-route { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:5px; }
+    .flight-origin { font-family:var(--font-head); font-size:11px; color:var(--cyan); }
+    .flight-arrow { color:var(--text-dim); font-size:15px; }
+    .flight-dest { font-family:var(--font-head); font-size:13px; color:var(--text); }
+    .flight-price { font-family:var(--font-head); font-size:34px; font-weight:700; line-height:1.1; margin-bottom:7px; }
+    .flight-meta { font-size:12px; color:var(--text-dim); margin-bottom:4px; }
+    .flight-airline { font-size:12px; color:rgba(200,230,245,0.35); margin-bottom:11px; flex:1; }
+    .booking-btns { display:flex; gap:5px; flex-wrap:wrap; margin-top:auto; padding-top:10px; border-top:1px solid rgba(0,212,255,0.08); }
+    .book-btn { padding:5px 9px; border-radius:5px; font-size:11px; font-family:var(--font-head); letter-spacing:.5px; text-decoration:none; transition:all .15s; white-space:nowrap; display:inline-block; }
+    .book-google { background:rgba(66,133,244,0.1); border:1px solid rgba(66,133,244,0.3); color:#6b9ff4; }
+    .book-google:hover { background:rgba(66,133,244,0.22); }
+    .book-sky { background:rgba(0,134,182,0.1); border:1px solid rgba(0,134,182,0.3); color:#35b3e0; }
+    .book-sky:hover { background:rgba(0,134,182,0.22); }
+    .book-opodo { background:rgba(0,186,67,0.1); border:1px solid rgba(0,186,67,0.3); color:#3dcb6e; }
+    .book-opodo:hover { background:rgba(0,186,67,0.22); }
+    .book-kiwi { background:rgba(0,212,255,0.1); border:1px solid rgba(0,212,255,0.3); color:var(--cyan); }
+    .book-kiwi:hover { background:rgba(0,212,255,0.22); }
+
+    .flights-no-key { background:rgba(240,165,0,0.08); border:1px solid rgba(240,165,0,0.35); border-radius:var(--radius); padding:13px 17px; color:var(--gold); font-size:13px; line-height:1.55; }
+    .flights-no-key a { color:var(--cyan); text-decoration:none; }
+    .flights-no-key a:hover { text-decoration:underline; }
+
+    #flights-map { height:500px; border-radius:0 0 var(--radius) var(--radius); }
+    .flight-map-header { padding:14px 20px 10px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+    .flight-map-header .card-label { margin-bottom:0; }
+    .btn-map-action { padding:8px 16px; width:auto; font-size:9px; }
+
+    .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--cyan); border-radius:50%; animation:spin .8s linear infinite; margin:auto; }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+    /* Leaflet flights map overrides */
+    .fl-label.leaflet-tooltip { background:rgba(0,6,18,0.92) !important; border:1px solid rgba(0,212,255,0.35) !important; color:var(--cyan) !important; font-family:var(--font-head) !important; font-size:9px !important; letter-spacing:1px !important; border-radius:5px !important; box-shadow:0 0 10px rgba(0,212,255,0.2) !important; padding:3px 7px !important; }
+    .fl-label.leaflet-tooltip::before { display:none !important; }
+
     /* ══ RESPONSIVE ══════════════════════════════════════════════════════════ */
     @media (min-width: 900px) {
       body { font-size: 17px; }
@@ -357,6 +408,7 @@
     <button onclick="switchTab('world')"     id="tab-world">World</button>
     <button onclick="switchTab('chat')"      id="tab-chat">Jarvis</button>
     <button onclick="switchTab('trade')"     id="tab-trade">Trade</button>
+    <button onclick="switchTab('flights')"   id="tab-flights">Flights</button>
   </nav>
 
   <!-- ══ MARKET ══════════════════════════════════════════════════════════════ -->
@@ -592,6 +644,87 @@
     </div>
   </div>
 
+  <!-- ══ FLIGHTS ══════════════════════════════════════════════════════════════ -->
+  <div class="panel" id="panel-flights">
+
+    <!-- API-Key missing banner (hidden until needed) -->
+    <div id="flights-no-key" class="flights-no-key" style="display:none">
+      ⚠ <strong>Kiwi API Key fehlt</strong> — Deals werden nicht geladen. Kostenlos registrieren:
+      <a href="https://tequila.kiwi.com" target="_blank" rel="noopener">tequila.kiwi.com</a>
+      → Key als <code>KIWI_API_KEY</code> in Railway Variables setzen.
+      Unten findest du trotzdem alle Buchungs-Links für die manuelle Suche.
+    </div>
+
+    <!-- ── Search Form ─────────────────────────────────────────────────────── -->
+    <div class="card">
+      <div class="card-label">Flugsuche</div>
+      <div class="flights-search-form" style="margin-top:12px">
+
+        <div class="input-group">
+          <div class="input-label">Abflug</div>
+          <select class="input-field" id="fl-origin">
+            <option value="VIE">Wien — VIE</option>
+            <option value="SZG">Salzburg — SZG</option>
+            <option value="MUC">München — MUC</option>
+            <option value="VIE,SZG,MUC">Alle drei</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">Ziel</div>
+          <input class="input-field" id="fl-dest" value="anywhere" placeholder="anywhere oder IATA"/>
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">Von</div>
+          <input class="input-field" id="fl-date-from" type="date"/>
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">Bis</div>
+          <input class="input-field" id="fl-date-to" type="date"/>
+        </div>
+
+        <div class="input-group" style="min-width:140px">
+          <div class="input-label">Nächte: <span id="fl-nights-val">7</span></div>
+          <input type="range" class="night-slider" id="fl-nights" min="3" max="21" value="7"
+                 oninput="document.getElementById('fl-nights-val').textContent=this.value"/>
+        </div>
+
+        <div class="input-group">
+          <div class="input-label">Stops</div>
+          <select class="input-field" id="fl-stops">
+            <option value="0">Nur Direkt</option>
+            <option value="1">Max 1 Stopp</option>
+            <option value="2" selected>Max 2 Stops</option>
+          </select>
+        </div>
+
+        <button class="btn-primary btn-search" onclick="searchFlights()">✈ SUCHEN</button>
+      </div>
+    </div>
+
+    <!-- ── Deal Cards ──────────────────────────────────────────────────────── -->
+    <div class="card">
+      <div class="card-label" id="flights-grid-label">Top Deals — Wien · Salzburg · München</div>
+      <div id="flights-grid" class="flights-grid" style="margin-top:14px">
+        <div class="skeleton" style="height:220px;border-radius:10px"></div>
+        <div class="skeleton" style="height:220px;border-radius:10px"></div>
+        <div class="skeleton" style="height:220px;border-radius:10px"></div>
+      </div>
+    </div>
+
+    <!-- ── Flight Arc Map ──────────────────────────────────────────────────── -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="flight-map-header">
+        <div class="card-label">Flugkarte — Live Deal Arcs</div>
+        <button class="btn-primary btn-map-action" onclick="flyToCheapest()">✈ Günstigsten anzeigen</button>
+      </div>
+      <div id="flights-map"></div>
+    </div>
+
+  </div><!-- /panel-flights -->
+
 </div><!-- /app -->
 
 <script>
@@ -621,6 +754,7 @@ function switchTab(name) {
   if (name === 'signals')   loadSignals();
   if (name === 'chat')      initWS();
   if (name === 'world')     setTimeout(initWorldMap, 80);
+  if (name === 'flights')   setTimeout(initFlights, 80);
 }
 
 // ── Health check ──────────────────────────────────────────────────────────────
@@ -1249,6 +1383,279 @@ function initWorldMap() {
   _tickerInterval = setInterval(updateTicker, 60000);
   _newsInterval   = setInterval(loadNews, 300000);
   setInterval(()=>{ loadEarthquakeFeed(); }, 600000); // re-check EQ every 10min
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  FLIGHTS TAB
+// ════════════════════════════════════════════════════════════════════════════
+let flightsMap = null, flightsInited = false, flightArcs = [], currentDeals = [];
+
+const FL_ORIGINS = {
+  VIE: { lat: 48.11, lon: 16.57, name: 'Wien' },
+  SZG: { lat: 47.79, lon: 13.00, name: 'Salzburg' },
+  MUC: { lat: 48.35, lon: 11.79, name: 'München' },
+};
+
+const AIRPORT_COORDS = {
+  VIE:[48.11,16.57],SZG:[47.79,13.00],MUC:[48.35,11.79],
+  LIS:[38.77,-9.13],OPO:[41.24,-8.68],ATH:[37.93,23.94],SKG:[40.52,22.97],
+  HER:[35.34,25.18],RHO:[36.41,28.09],CFU:[39.60,19.91],JMK:[37.43,25.35],
+  KGS:[36.79,27.09],CHQ:[35.53,24.15],ZTH:[37.75,20.88],
+  BCN:[41.30,2.08],MAD:[40.47,-3.56],AGP:[36.67,-4.50],VLC:[39.49,-0.48],
+  SVQ:[37.42,-5.89],PMI:[39.55,2.74],IBZ:[38.87,1.37],ALC:[38.28,-0.56],
+  TFS:[28.04,-16.57],LPA:[27.93,-15.39],ACE:[28.95,-13.61],FUE:[28.45,-13.86],
+  FCO:[41.80,12.25],MXP:[45.63,8.72],VCE:[45.50,12.35],BLQ:[44.54,11.29],
+  NAP:[40.88,14.29],CTA:[37.47,15.07],PSA:[43.68,10.39],
+  CDG:[49.01,2.55],ORY:[48.72,2.38],NCE:[43.66,7.21],MRS:[43.44,5.22],
+  TLS:[43.63,1.37],LYS:[45.72,5.08],NTE:[47.15,-1.61],BOD:[44.83,-0.72],
+  LHR:[51.47,-0.46],LGW:[51.15,-0.17],STN:[51.88,0.24],MAN:[53.35,-2.28],
+  EDI:[55.95,-3.37],BHX:[52.45,-1.75],GLA:[55.87,-4.43],DUB:[53.42,-6.27],
+  FRA:[50.03,8.57],MUC:[48.35,11.79],BER:[52.37,13.50],HAM:[53.63,9.99],
+  DUS:[51.29,6.77],CGN:[50.87,7.12],STR:[48.69,9.22],NUE:[49.50,11.08],
+  ZRH:[47.46,8.55],GVA:[46.24,6.11],BSL:[47.60,7.53],
+  BRU:[50.90,4.48],AMS:[52.31,4.76],EIN:[51.45,5.39],RTM:[51.96,4.44],
+  CPH:[55.62,12.65],ARN:[59.65,17.92],OSL:[60.20,11.08],HEL:[60.32,24.96],
+  RIX:[56.92,23.97],TLL:[59.41,24.83],VNO:[54.63,25.28],WAW:[52.17,20.97],
+  KRK:[50.08,19.79],PRG:[50.10,14.26],BUD:[47.44,19.26],BTS:[48.17,17.21],
+  BEG:[44.82,20.31],LJU:[46.22,14.46],ZAD:[44.10,15.35],SPU:[43.54,16.30],
+  DBV:[42.56,18.27],TGD:[42.36,19.25],SKP:[41.96,21.62],SOF:[42.70,23.41],
+  OTP:[44.57,26.10],KBP:[50.35,30.89],
+  IST:[41.28,28.75],SAW:[40.90,29.31],AYT:[36.89,30.80],DLM:[36.71,28.79],
+  BJV:[37.25,27.66],ADB:[38.29,27.16],ESB:[40.13,32.99],TZX:[40.95,39.79],
+  TUN:[36.85,10.23],RAK:[31.61,-8.04],CMN:[33.36,-7.59],
+  HRG:[27.18,33.80],SSH:[27.98,34.39],CAI:[30.11,31.41],
+  DXB:[25.25,55.36],DOH:[25.27,51.61],AUH:[24.43,54.65],MCT:[23.59,58.28],
+  BKK:[13.69,100.75],SIN:[1.36,103.99],HKG:[22.31,113.91],
+  NRT:[35.76,140.39],ICN:[37.46,126.44],TPE:[25.08,121.23],
+  JFK:[40.64,-73.78],LAX:[33.94,-118.41],MIA:[25.79,-80.29],
+  ORD:[41.98,-87.91],YYZ:[43.68,-79.63],MEX:[19.44,-99.07],
+  GRU:[-23.43,-46.47],EZE:[-34.82,-58.54],BOG:[4.70,-74.14],
+  SYD:[-33.94,151.18],MEL:[-37.67,144.84],JNB:[-26.13,28.24],CPT:[-33.96,18.60],
+};
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function initFlights() {
+  if (flightsInited) { flightsMap?.invalidateSize(); return; }
+  flightsInited = true;
+
+  const today = new Date();
+  const maxDate = new Date(today); maxDate.setDate(maxDate.getDate() + 180);
+  document.getElementById('fl-date-from').value = today.toISOString().slice(0, 10);
+  document.getElementById('fl-date-to').value   = maxDate.toISOString().slice(0, 10);
+
+  initFlightMap();
+  loadFlightDeals();
+}
+
+// ── Load top deals ─────────────────────────────────────────────────────────────
+async function loadFlightDeals() {
+  const grid = document.getElementById('flights-grid');
+  grid.innerHTML = '<div style="padding:40px;grid-column:1/-1;text-align:center"><div class="spinner"></div></div>';
+
+  try {
+    const r = await fetch(API + '/api/flights/deals');
+    const d = await r.json();
+    currentDeals = d.deals || [];
+
+    if (d.mock) {
+      document.getElementById('flights-no-key').style.display = 'block';
+    }
+    renderFlightCards(currentDeals, 'flights-grid', 'Top Deals — Wien · Salzburg · München');
+    renderFlightArcs(currentDeals);
+  } catch (e) {
+    grid.innerHTML = `<div style="grid-column:1/-1;color:var(--red);padding:24px;text-align:center">
+      ⚠ API nicht erreichbar — ${escHtml(e.message)}<br>
+      <div class="booking-btns" style="justify-content:center;margin-top:14px">
+        <a href="https://www.google.com/travel/flights" target="_blank" class="book-btn book-google">Google Flights</a>
+        <a href="https://www.skyscanner.de" target="_blank" class="book-btn book-sky">Skyscanner</a>
+        <a href="https://www.opodo.de" target="_blank" class="book-btn book-opodo">Opodo</a>
+        <a href="https://www.kiwi.com/de/" target="_blank" class="book-btn book-kiwi">Kiwi ↗</a>
+      </div></div>`;
+  }
+}
+
+// ── Search ────────────────────────────────────────────────────────────────────
+async function searchFlights() {
+  const flyFrom  = document.getElementById('fl-origin').value;
+  const flyTo    = (document.getElementById('fl-dest').value.trim() || 'anywhere');
+  const rawFrom  = document.getElementById('fl-date-from').value;
+  const rawTo    = document.getElementById('fl-date-to').value;
+  const nights   = parseInt(document.getElementById('fl-nights').value);
+  const stops    = parseInt(document.getElementById('fl-stops').value);
+
+  const toKiwi = s => s ? s.split('-').reverse().join('/') : '';
+
+  const params = new URLSearchParams({
+    fly_from: flyFrom, fly_to: flyTo,
+    date_from: toKiwi(rawFrom), date_to: toKiwi(rawTo),
+    nights_min: nights, nights_max: Math.min(nights + 7, 21),
+    max_stopovers: stops,
+  });
+
+  const grid = document.getElementById('flights-grid');
+  grid.innerHTML = '<div style="padding:40px;grid-column:1/-1;text-align:center"><div class="spinner"></div></div>';
+
+  try {
+    const r = await fetch(`${API}/api/flights/search?${params}`);
+    if (!r.ok) { const e = await r.json().catch(()=>({detail:'Fehler'})); throw new Error(e.detail||r.statusText); }
+    const d = await r.json();
+    currentDeals = d.deals || [];
+    const label = `${currentDeals.length} Deals — ${flyFrom} → ${flyTo === 'anywhere' ? 'Überall' : flyTo.toUpperCase()}`;
+    renderFlightCards(currentDeals, 'flights-grid', label);
+    renderFlightArcs(currentDeals);
+    showToast(`✓ ${currentDeals.length} Deals gefunden`, 'success');
+  } catch (e) {
+    showToast('Suche fehlgeschlagen: ' + e.message, 'error');
+    grid.innerHTML = `<div style="grid-column:1/-1;color:var(--red);padding:20px;text-align:center">⚠ ${escHtml(e.message)}</div>`;
+  }
+}
+
+// ── Render cards ──────────────────────────────────────────────────────────────
+function flPriceColor(p) {
+  return p < 100 ? 'var(--green)' : p < 300 ? 'var(--gold)' : 'var(--red)';
+}
+
+function flFmtDate(s) {
+  if (!s) return '—';
+  try { return new Date(s).toLocaleDateString('de-DE', {day:'numeric', month:'short'}); }
+  catch { return s; }
+}
+
+function flBookingLinks(deal) {
+  const dep = deal.departure || '', ret = deal.return_date || '';
+  const skyDate = dep.replace(/-/g, '').slice(2);
+  const gUrl  = `https://www.google.com/travel/flights?q=Fl%C3%BCge+von+${deal.origin}+nach+${deal.dest}+am+${dep}`;
+  const skyUrl = `https://www.skyscanner.de/transport/flights/${deal.origin.toLowerCase()}/${deal.dest.toLowerCase()}/${skyDate}/`;
+  const opUrl  = `https://www.opodo.de/flights/search/?adults=1&origin=${deal.origin}&destination=${deal.dest}&departureDate=${dep}&returnDate=${ret}&cabinClass=Economy`;
+  const kUrl   = deal.deep_link || 'https://www.kiwi.com/de/';
+  return `<a href="${escAttr(gUrl)}"  target="_blank" rel="noopener" class="book-btn book-google">Google</a>
+          <a href="${escAttr(skyUrl)}" target="_blank" rel="noopener" class="book-btn book-sky">Skyscanner</a>
+          <a href="${escAttr(opUrl)}"  target="_blank" rel="noopener" class="book-btn book-opodo">Opodo</a>
+          <a href="${escAttr(kUrl)}"   target="_blank" rel="noopener" class="book-btn book-kiwi">Kiwi ↗</a>`;
+}
+
+function renderFlightCards(deals, containerId, label) {
+  if (label) document.getElementById('flights-grid-label').textContent = label;
+  const grid = document.getElementById(containerId);
+  if (!deals.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;color:var(--text-dim);padding:40px;text-align:center">Keine Deals gefunden. Suchparameter anpassen.</div>';
+    return;
+  }
+  const cheapest = Math.min(...deals.map(d => d.price));
+  grid.innerHTML = deals.map(deal => {
+    const isCheapest = deal.price === cheapest;
+    const clr = flPriceColor(deal.price);
+    const dep = flFmtDate(deal.departure), ret = flFmtDate(deal.return_date);
+    const stopsLabel = deal.stops === 0 ? 'Direkt' : deal.stops + (deal.stops === 1 ? ' Stopp' : ' Stops');
+    return `<div class="flight-card">
+      ${isCheapest ? '<div class="deal-badge">★ GÜNSTIGSTER FUND</div>' : ''}
+      <div class="flight-route">
+        <span class="flight-origin">${escHtml(deal.origin_name)} ${escHtml(deal.origin)}</span>
+        <span class="flight-arrow">→ ${escHtml(deal.dest_flag || '🌍')}</span>
+        <span class="flight-dest">${escHtml(deal.dest_name)} ${escHtml(deal.dest)}</span>
+      </div>
+      <div class="flight-price" style="color:${clr}">€ ${deal.price}</div>
+      <div class="flight-meta">✈ ${dep} → ${ret} &nbsp;·&nbsp; ${deal.nights}N &nbsp;·&nbsp; ${stopsLabel}</div>
+      <div class="flight-airline">${escHtml(deal.airline || '')}</div>
+      <div class="booking-btns">${flBookingLinks(deal)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Flight Map ────────────────────────────────────────────────────────────────
+function initFlightMap() {
+  if (flightsMap) return;
+  flightsMap = L.map('flights-map', { center:[47, 14], zoom:4, zoomControl:true, attributionControl:true });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution:'&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:18,
+  }).addTo(flightsMap);
+
+  // Origin airport markers with pulsing tooltip
+  Object.entries(FL_ORIGINS).forEach(([iata, ap]) => {
+    const m = L.circleMarker([ap.lat, ap.lon], {
+      radius:11, fillColor:'#00d4ff', color:'#00d4ff',
+      weight:2.5, opacity:1, fillOpacity:.55,
+    }).addTo(flightsMap);
+    m.bindTooltip(`✈ ${ap.name} (${iata})`, {
+      permanent:true, direction:'top', className:'fl-label', offset:[0,-10],
+    });
+  });
+}
+
+function arcPoints(la1, lo1, la2, lo2, n=60) {
+  const pts = [];
+  const midLat = (la1 + la2) / 2 + Math.abs(la2 - la1) * 0.3;
+  const midLon = (lo1 + lo2) / 2;
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    pts.push([
+      (1-t)*(1-t)*la1 + 2*(1-t)*t*midLat + t*t*la2,
+      (1-t)*(1-t)*lo1 + 2*(1-t)*t*midLon + t*t*lo2,
+    ]);
+  }
+  return pts;
+}
+
+function arcColor(price) {
+  return price < 100 ? '#00ff88' : price < 200 ? '#f0a500' : price < 400 ? '#ff6600' : '#ff3b3b';
+}
+
+function renderFlightArcs(deals) {
+  if (!flightsMap) return;
+  flightArcs.forEach(l => flightsMap.removeLayer(l));
+  flightArcs = [];
+
+  const cheapest = Math.min(...deals.map(d => d.price));
+
+  deals.forEach(deal => {
+    const origin = FL_ORIGINS[deal.origin];
+    if (!origin) return;
+    const coords = AIRPORT_COORDS[deal.dest];
+    if (!coords) return;
+    const [dLat, dLon] = coords;
+
+    const color  = arcColor(deal.price);
+    const weight = deal.price === cheapest ? 8 : deal.price < 200 ? 5 : 3;
+    const dep = flFmtDate(deal.departure), ret = flFmtDate(deal.return_date);
+    const skyDate = (deal.departure || '').replace(/-/g, '').slice(2);
+    const kUrl = deal.deep_link || 'https://www.kiwi.com/de/';
+
+    const popup = `<div style="font-family:'Rajdhani',sans-serif;min-width:220px">
+      <div style="font-family:'Orbitron',monospace;font-size:10px;color:${color};letter-spacing:2px;margin-bottom:6px">✈ FLIGHT DEAL</div>
+      <b>${escHtml(deal.dest_name)} ${escHtml(deal.dest)}</b> ${escHtml(deal.dest_flag || '')}
+      <br><span style="font-size:26px;font-family:'Orbitron',monospace;font-weight:700;color:${color}">€ ${deal.price}</span>
+      <br><span style="font-size:12px;color:rgba(200,230,245,0.55)">ab ${escHtml(deal.origin_name)} · ${dep} → ${ret} · ${deal.nights}N</span>
+      <br><span style="font-size:12px;color:rgba(200,230,245,0.4)">${escHtml(deal.airline || '')} · ${deal.stops === 0 ? 'Direkt' : deal.stops + ' Stopp'}</span>
+      <div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:4px">
+        <a href="https://www.skyscanner.de/transport/flights/${deal.origin.toLowerCase()}/${deal.dest.toLowerCase()}/${skyDate}/" target="_blank" style="color:#35b3e0;font-size:11px;border:1px solid rgba(53,179,224,0.4);border-radius:4px;padding:3px 8px;text-decoration:none">Skyscanner</a>
+        <a href="${escAttr(kUrl)}" target="_blank" style="color:#00d4ff;font-size:11px;border:1px solid rgba(0,212,255,0.4);border-radius:4px;padding:3px 8px;text-decoration:none">Kiwi ↗</a>
+      </div>
+    </div>`;
+
+    const arc = L.polyline(arcPoints(origin.lat, origin.lon, dLat, dLon), {
+      color, weight, opacity: 0.78,
+      dashArray: deal.stops > 0 ? '7 4' : null,
+    }).addTo(flightsMap);
+    arc.bindPopup(popup);
+
+    const dot = L.circleMarker([dLat, dLon], {
+      radius:6, fillColor:color, color:color,
+      weight:1.5, opacity:1, fillOpacity:.65,
+    }).addTo(flightsMap);
+    dot.bindPopup(popup);
+
+    flightArcs.push(arc, dot);
+  });
+}
+
+function flyToCheapest() {
+  if (!currentDeals.length || !flightsMap) return;
+  const best = currentDeals.reduce((a, b) => a.price < b.price ? a : b);
+  const coords = AIRPORT_COORDS[best.dest];
+  if (coords) {
+    flightsMap.flyTo(coords, 5, { duration:1.5 });
+    showToast(`✈ ${best.dest_name} — € ${best.price}`, 'success');
+  }
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
