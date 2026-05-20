@@ -647,13 +647,8 @@
   <!-- ══ FLIGHTS ══════════════════════════════════════════════════════════════ -->
   <div class="panel" id="panel-flights">
 
-    <!-- API-Key missing banner (hidden until needed) -->
-    <div id="flights-no-key" class="flights-no-key" style="display:none">
-      ⚠ <strong>Kiwi API Key fehlt</strong> — Deals werden nicht geladen. Kostenlos registrieren:
-      <a href="https://tequila.kiwi.com" target="_blank" rel="noopener">tequila.kiwi.com</a>
-      → Key als <code>KIWI_API_KEY</code> in Railway Variables setzen.
-      Unten findest du trotzdem alle Buchungs-Links für die manuelle Suche.
-    </div>
+    <!-- Error / empty state (shown by JS when API returns error) -->
+    <div id="flights-error-banner" class="flights-no-key" style="display:none"></div>
 
     <!-- ── Search Form ─────────────────────────────────────────────────────── -->
     <div class="card">
@@ -1457,20 +1452,17 @@ async function loadFlightDeals() {
     const d = await r.json();
     currentDeals = d.deals || [];
 
-    if (d.mock) {
-      document.getElementById('flights-no-key').style.display = 'block';
+    if (d.error) {
+      showFlightsError(d.error);
+    } else {
+      document.getElementById('flights-error-banner').style.display = 'none';
     }
+
     renderFlightCards(currentDeals, 'flights-grid', 'Top Deals — Wien · Salzburg · München');
     renderFlightArcs(currentDeals);
   } catch (e) {
-    grid.innerHTML = `<div style="grid-column:1/-1;color:var(--red);padding:24px;text-align:center">
-      ⚠ API nicht erreichbar — ${escHtml(e.message)}<br>
-      <div class="booking-btns" style="justify-content:center;margin-top:14px">
-        <a href="https://www.google.com/travel/flights" target="_blank" class="book-btn book-google">Google Flights</a>
-        <a href="https://www.skyscanner.de" target="_blank" class="book-btn book-sky">Skyscanner</a>
-        <a href="https://www.opodo.de" target="_blank" class="book-btn book-opodo">Opodo</a>
-        <a href="https://www.kiwi.com/de/" target="_blank" class="book-btn book-kiwi">Kiwi ↗</a>
-      </div></div>`;
+    showFlightsError('Jarvis API nicht erreichbar — ' + e.message);
+    grid.innerHTML = '';
   }
 }
 
@@ -1497,16 +1489,22 @@ async function searchFlights() {
 
   try {
     const r = await fetch(`${API}/api/flights/search?${params}`);
-    if (!r.ok) { const e = await r.json().catch(()=>({detail:'Fehler'})); throw new Error(e.detail||r.statusText); }
     const d = await r.json();
     currentDeals = d.deals || [];
+
+    if (d.error) {
+      showFlightsError(d.error);
+    } else {
+      document.getElementById('flights-error-banner').style.display = 'none';
+    }
+
     const label = `${currentDeals.length} Deals — ${flyFrom} → ${flyTo === 'anywhere' ? 'Überall' : flyTo.toUpperCase()}`;
     renderFlightCards(currentDeals, 'flights-grid', label);
     renderFlightArcs(currentDeals);
-    showToast(`✓ ${currentDeals.length} Deals gefunden`, 'success');
+    if (currentDeals.length) showToast(`✓ ${currentDeals.length} Deals gefunden`, 'success');
   } catch (e) {
-    showToast('Suche fehlgeschlagen: ' + e.message, 'error');
-    grid.innerHTML = `<div style="grid-column:1/-1;color:var(--red);padding:20px;text-align:center">⚠ ${escHtml(e.message)}</div>`;
+    showFlightsError('Jarvis API nicht erreichbar — ' + e.message);
+    document.getElementById('flights-grid').innerHTML = '';
   }
 }
 
@@ -1534,11 +1532,27 @@ function flBookingLinks(deal) {
           <a href="${escAttr(kUrl)}"   target="_blank" rel="noopener" class="book-btn book-kiwi">Kiwi ↗</a>`;
 }
 
+const _FL_MANUAL_LINKS = `<div class="booking-btns" style="justify-content:center;margin-top:16px">
+  <a href="https://www.google.com/travel/flights" target="_blank" rel="noopener" class="book-btn book-google">Google Flights</a>
+  <a href="https://www.skyscanner.de" target="_blank" rel="noopener" class="book-btn book-sky">Skyscanner</a>
+  <a href="https://www.opodo.de" target="_blank" rel="noopener" class="book-btn book-opodo">Opodo</a>
+  <a href="https://www.kiwi.com/de/" target="_blank" rel="noopener" class="book-btn book-kiwi">Kiwi ↗</a>
+</div>`;
+
+function showFlightsError(msg) {
+  const el = document.getElementById('flights-error-banner');
+  el.innerHTML = `⚠ ${escHtml(msg)}${_FL_MANUAL_LINKS}`;
+  el.style.display = 'block';
+}
+
 function renderFlightCards(deals, containerId, label) {
   if (label) document.getElementById('flights-grid-label').textContent = label;
   const grid = document.getElementById(containerId);
   if (!deals.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;color:var(--text-dim);padding:40px;text-align:center">Keine Deals gefunden. Suchparameter anpassen.</div>';
+    grid.innerHTML = `<div style="grid-column:1/-1;color:var(--text-dim);padding:32px;text-align:center">
+      Keine Deals gefunden — API Key setzen oder Suchparameter anpassen.
+      ${_FL_MANUAL_LINKS}
+    </div>`;
     return;
   }
   const cheapest = Math.min(...deals.map(d => d.price));

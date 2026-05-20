@@ -351,15 +351,8 @@ async def jarvis_chat(req: ChatRequest):
 
 # ── Flights / Kiwi Tequila ───────────────────────────────────────────────────
 
-_KIWI_MOCK: list[dict] = [
-    {"origin":"VIE","origin_name":"Wien","dest":"LIS","dest_name":"Lissabon","dest_country":"Portugal","dest_flag":"🇵🇹","price":89,"departure":"2026-06-12","return_date":"2026-06-19","nights":7,"stops":1,"airline":"Ryanair","deep_link":"https://www.kiwi.com/de/"},
-    {"origin":"VIE","origin_name":"Wien","dest":"ATH","dest_name":"Athen","dest_country":"Griechenland","dest_flag":"🇬🇷","price":125,"departure":"2026-07-03","return_date":"2026-07-10","nights":7,"stops":0,"airline":"Aegean Airlines","deep_link":"https://www.kiwi.com/de/"},
-    {"origin":"MUC","origin_name":"München","dest":"BCN","dest_name":"Barcelona","dest_country":"Spanien","dest_flag":"🇪🇸","price":178,"departure":"2026-06-20","return_date":"2026-06-27","nights":7,"stops":1,"airline":"Vueling","deep_link":"https://www.kiwi.com/de/"},
-    {"origin":"SZG","origin_name":"Salzburg","dest":"PMI","dest_name":"Mallorca","dest_country":"Spanien","dest_flag":"🇪🇸","price":210,"departure":"2026-07-15","return_date":"2026-07-22","nights":7,"stops":0,"airline":"Wizz Air","deep_link":"https://www.kiwi.com/de/"},
-    {"origin":"VIE","origin_name":"Wien","dest":"DUB","dest_name":"Dublin","dest_country":"Irland","dest_flag":"🇮🇪","price":247,"departure":"2026-08-01","return_date":"2026-08-08","nights":7,"stops":1,"airline":"Ryanair","deep_link":"https://www.kiwi.com/de/"},
-]
-
 _KIWI_BASE = "https://tequila.kiwi.com/v2/search"
+_KIWI_NO_KEY = "KIWI_API_KEY nicht gesetzt — kostenlos registrieren unter tequila.kiwi.com und Key in Railway Variables eintragen"
 
 
 def _country_flag(iso2: str) -> str:
@@ -412,7 +405,7 @@ async def flights_deals(origins: str = "VIE,SZG,MUC"):
     """Günstigste Round-Trip Deals ab VIE/SZG/MUC via Kiwi Tequila."""
     key = os.environ.get("KIWI_API_KEY", "")
     if not key:
-        return {"deals": _KIWI_MOCK, "mock": True, "count": len(_KIWI_MOCK)}
+        return {"deals": [], "count": 0, "error": _KIWI_NO_KEY}
 
     today = datetime.now()
     params = {
@@ -429,10 +422,10 @@ async def flights_deals(origins: str = "VIE,SZG,MUC"):
             r = await c.get(_KIWI_BASE, params=params, headers={"apikey": key})
             r.raise_for_status()
         deals = _parse_kiwi(r.json())
-        return {"deals": deals, "mock": False, "count": len(deals)}
+        return {"deals": deals, "count": len(deals)}
     except Exception as e:
         logger.error(f"Kiwi deals: {e}")
-        return {"deals": _KIWI_MOCK, "mock": True, "count": len(_KIWI_MOCK), "error": str(e)}
+        return {"deals": [], "count": 0, "error": f"Kiwi API Fehler: {e}"}
 
 
 @app.get("/api/flights/search")
@@ -448,7 +441,7 @@ async def flights_search(
     """Individuelle Flugsuche via Kiwi Tequila."""
     key = os.environ.get("KIWI_API_KEY", "")
     if not key:
-        return {"deals": _KIWI_MOCK, "mock": True, "count": len(_KIWI_MOCK)}
+        return {"deals": [], "count": 0, "error": _KIWI_NO_KEY}
 
     today = datetime.now()
     params = {
@@ -465,10 +458,10 @@ async def flights_search(
             r = await c.get(_KIWI_BASE, params=params, headers={"apikey": key})
             r.raise_for_status()
         deals = _parse_kiwi(r.json())
-        return {"deals": deals, "mock": False, "count": len(deals)}
+        return {"deals": deals, "count": len(deals)}
     except Exception as e:
         logger.error(f"Kiwi search: {e}")
-        raise HTTPException(502, f"Kiwi API Fehler: {e}")
+        return {"deals": [], "count": 0, "error": f"Kiwi API Fehler: {e}"}
 
 
 @app.get("/api/flights/map")
@@ -476,7 +469,7 @@ async def flights_map(fly_from: str = "VIE,SZG,MUC"):
     """Günstigster Flug je Zielstadt für Karten-Arcs."""
     key = os.environ.get("KIWI_API_KEY", "")
     if not key:
-        return {"deals": _KIWI_MOCK, "mock": True, "count": len(_KIWI_MOCK)}
+        return {"deals": [], "count": 0, "error": _KIWI_NO_KEY}
 
     today = datetime.now()
     params = {
@@ -493,10 +486,10 @@ async def flights_map(fly_from: str = "VIE,SZG,MUC"):
             r = await c.get(_KIWI_BASE, params=params, headers={"apikey": key})
             r.raise_for_status()
         deals = _parse_kiwi(r.json())
-        return {"deals": deals, "mock": False, "count": len(deals)}
+        return {"deals": deals, "count": len(deals)}
     except Exception as e:
         logger.error(f"Kiwi map: {e}")
-        return {"deals": _KIWI_MOCK, "mock": True, "count": len(_KIWI_MOCK), "error": str(e)}
+        return {"deals": [], "count": 0, "error": f"Kiwi API Fehler: {e}"}
 
 
 # ── WebSocket ────────────────────────────────────────────────────────────────
