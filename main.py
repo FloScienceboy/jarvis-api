@@ -244,48 +244,136 @@ async def get_market():
     }
 
 
+def _generate_live_signals() -> list:
+    """Generiert Predictor-Signale via yfinance (SMA20 + Momentum).
+    Gibt eine leere Liste zurueck wenn yfinance fehlschlaegt — Exception
+    wird nach oben weitergegeben damit der Caller den Fehler loggen kann.
+    """
+    import math, traceback
+    PORTFOLIO = [
+        {"symbol": "AAPL",  "yf": "AAPL",    "entry": 145.0},
+        {"symbol": "GOOGL", "yf": "GOOGL",   "entry": 135.0},
+        {"symbol": "MSFT",  "yf": "MSFT",    "entry": 390.0},
+        {"symbol": "BTC",   "yf": "BTC-USD", "entry": 50000.0},
+        {"symbol": "SPY",   "yf": "SPY",     "entry": 440.0},
+    ]
+    import yfinance as yf  # wirft ImportError wenn nicht installiert
+    signals = []
+    errors  = []
+    for asset in PORTFOLIO:
+        try:
+            t = yf.Ticker(asset["yf"])
+            h = t.history(period="30d")
+            if h.empty or len(h) < 5:
+                errors.append(f"{asset['symbol']}: leere Daten")
+                continue
+            closes = h["Close"].tolist()
+            price  = closes[-1]
+            sma20  = sum(closes[-20:]) / min(len(closes), 20)
+            ret5d  = (closes[-1] / closes[-5] - 1) if len(closes) >= 5 else 0
+            ret1d  = (closes[-1] / closes[-2] - 1) if len(closes) >= 2 else 0
+
+            score = 0
+            if price > sma20 * 1.01:  score += 1
+            if ret5d > 0.015:         score += 1
+            if ret1d > 0.005:         score += 1
+            if price < sma20 * 0.99:  score -= 1
+            if ret5d < -0.015:        score -= 1
+            if ret1d < -0.005:        score -= 1
+
+            if score >= 2:
+                side, label = "buy",  "KAUFEN"
+            elif score <= -2:
+                side, label = "sell", "VERKAUFEN"
+            else:
+                side, label = ("buy" if ret1d >= 0 else "sell"), "HALTEN"
+
+            stop   = round(price * 0.96, 2)
+            target = round(price * 1.08, 2)
+            conf   = min(95, max(40, 50 + abs(score) * 15))
+
+            signals.append({
+                "symbol":    asset["symbol"],
+                "side":      side,
+                "action":    label,
+                "price":     round(price, 2),
+                "target":    target,
+                "stop":      stop,
+                "sma20":     round(sma20, 2),
+                "ret_1d":    round(ret1d * 100, 2),
+                "ret_5d":    round(ret5d * 100, 2),
+                "confidence":conf,
+                "strategy":  "SMA20 + Momentum",
+                "timestamp": __import__("datetime").datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "source":    "live_yfinance",
+            })
+        except Exception as e:
+            errors.append(f"{asset['symbol']}: {e}")
+    if not signals and errors:
+        raise RuntimeError("yfinance: " + "; ".join(errors))
+    return signals
+
+
 @app.get("/api/signals")
 async def get_signals():
-    """Letzte Trading-Signale: lokaler Log oder Alpaca Order-History."""
-    # 1) Lokaler trades.json Cache (funktioniert wenn Predictor lokal laeuft)
-    log_path = LOGS_DIR / "trades.json"
-    if log_path.exists():
-        try:
-            trades = json.loads(log_path.read_text(encoding="utf-8"))
-            recent = trades[-20:] if len(trades) > 20 else trades
-            return {"signals": list(reversed(recent)), "total": len(trades), "source": "local_log"}
-        except Exception:
-            pass
-
-    # 2) Fallback: echte Orders von Alpaca holen
-    client, paper = _get_alpaca_client()
-    if not client:
-        return {"signals": [], "message": "Noch keine Signale. Alpaca nicht verbunden.", "source": "none"}
+    """Trading-Signale: Live-Analyse via yfinance (Prio 1), dann Alpaca-Orders."""
+    # 1) Live-Signale via yfinance — immer zuerst
     try:
-        from alpaca.trading.requests import GetOrdersRequest
-        from alpaca.trading.enums import QueryOrderStatus
-        req    = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=20)
-        orders = client.get_orders(filter=req)
-        signals = []
-        for o in orders:
-            signals.append({
-                "timestamp":  str(o.submitted_at or o.created_at),
-                "symbol":     o.symbol,
-                "side":       o.side.value if hasattr(o.side, "value") else str(o.side),
-                "qty":        str(o.qty),
-                "status":     o.status.value if hasattr(o.status, "value") else str(o.status),
-                "filled_avg": str(o.filled_avg_price or "-"),
-                "type":       o.type.value if hasattr(o.type, "value") else str(o.type),
-                "source":     "alpaca_order",
-            })
-        return {
-            "signals": signals,
-            "total": len(signals),
-            "source": "alpaca_orders",
-            "mode": "paper" if paper else "live",
+        signals = _generate_live_signals()
+        if signals:
+            return {"signals": signals, "total": len(signals), "source": "live_yfinance"}
+    except Exception as e:
+        live_error = str(e)
+    else:
+        live_error = "Keine Daten zurueckgegeben"
+
+    # 2) Fallback: Alpaca Order-History (zeigt mindestens was)
+    try:
+        client, paper = _get_alpaca_client()
+        if client:
+            from alpaca.trading.requests import GetOrdersRequest
+            from alpaca.trading.enums import QueryOrderStatus
+            req    = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=20)
+            orders = client.get_orders(filter=req)
+            sigs   = [{
+                "timestamp": str(o.submitted_at or o.created_at),
+                "symbol":    o.symbol,
+                "side":      o.side.value if hasattr(o.side, "value") else str(o.side),
+                "price":     str(o.filled_avg_price or "-"),
+                "strategy":  "Alpaca Order",
+                "source":    "alpaca_order",
+            } for o in orders]
+            if sigs:
+                return {"signals": sigs, "total": len(sigs),
+                        "source": "alpaca_orders",
+                        "warning": f"Live-Analyse nicht verfuegbar: {live_error}"}
+    except Exception:
+        pass
+
+    # 3) Nichts verfuegbar — klare Fehlermeldung
+    return {"signals": [], "total": 0,
+            "source": "none",
+            "error": f"Live-Signale fehlgeschlagen: {live_error}"}
+
+
+@app.get("/api/debug/signals")
+async def debug_signals():
+    """Debug: testet yfinance direkt — zeigt ob Live-Signale funktionieren."""
+    import sys
+    result = {"python": sys.version, "yfinance_installed": False, "test_ticker": None, "error": None}
+    try:
+        import yfinance as yf
+        result["yfinance_installed"] = True
+        t = yf.Ticker("AAPL")
+        h = t.history(period="5d")
+        result["test_ticker"] = {
+            "symbol": "AAPL",
+            "rows": len(h),
+            "latest_close": round(float(h["Close"].iloc[-1]), 2) if not h.empty else None,
         }
     except Exception as e:
-        return {"signals": [], "message": f"Alpaca Order-History: {e}", "source": "error"}
+        result["error"] = str(e)
+    return result
 
 
 @app.get("/api/portfolio")
