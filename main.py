@@ -453,6 +453,48 @@ async def debug_signals():
     return result
 
 
+@app.get("/api/signals")
+async def get_signals():
+    """Trading-Signale: Alpaca Data → yfinance → CoinGecko → Alpaca Orders."""
+    # 1) Live-Signale via Alpaca / yfinance / CoinGecko
+    try:
+        signals = _generate_live_signals()
+        if signals:
+            return {"signals": signals, "total": len(signals), "source": "live"}
+    except Exception as e:
+        live_error = str(e)
+    else:
+        live_error = "Keine Daten von allen Quellen"
+
+    # 2) Fallback: Alpaca Order-History (zeigt zumindest echte Orders)
+    try:
+        client, _ = _get_alpaca_client()
+        if client:
+            from alpaca.trading.requests import GetOrdersRequest
+            from alpaca.trading.enums    import QueryOrderStatus
+            orders = client.get_orders(filter=GetOrdersRequest(
+                status=QueryOrderStatus.ALL, limit=20))
+            sigs = [{
+                "timestamp": str(o.submitted_at or o.created_at),
+                "symbol":    o.symbol,
+                "side":      o.side.value if hasattr(o.side, "value") else str(o.side),
+                "action":    "KAUFEN" if str(o.side).lower() in ("buy","orderside.buy") else "VERKAUFEN",
+                "price":     float(o.filled_avg_price) if o.filled_avg_price else 0,
+                "strategy":  "Alpaca Order",
+                "source":    "alpaca_order",
+            } for o in orders]
+            if sigs:
+                return {"signals": sigs, "total": len(sigs),
+                        "source": "alpaca_orders",
+                        "note": f"Live-Analyse nicht verfuegbar: {live_error}"}
+    except Exception:
+        pass
+
+    # 3) Alles fehlgeschlagen → klare Fehlermeldung statt leerer Liste
+    return {"signals": [], "total": 0, "source": "none",
+            "error": f"Alle Datenquellen fehlgeschlagen: {live_error}"}
+
+
 @app.get("/api/portfolio")
 async def get_portfolio():
     """Alpaca Account-Status + Positionen."""
