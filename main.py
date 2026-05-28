@@ -60,6 +60,7 @@ _sessions: dict[str, list] = {}
 _MAX_HISTORY = 20
 
 # ── FastAPI App ─────────────────────────────────────────────────────────────
+APP_START_TIME = __import__("time").time()
 app = FastAPI(
     title="Jarvis API",
     description="The Predictor + Jarvis Cloud Backend",
@@ -131,6 +132,17 @@ async def health():
         "finance_dir": str(FINANCE_DIR),
         "alpaca_key_set": bool(os.environ.get("ALPACA_API_KEY")),
     }
+
+
+@app.get("/__version__")
+async def version():
+    """Build-Version für Auto-Refresh-Detection im Frontend."""
+    import hashlib, time
+    # Stable per Deploy: Hash aus Startup-Zeit (ändert sich bei jedem Railway-Deploy)
+    build_id = os.environ.get("RAILWAY_DEPLOYMENT_ID",
+                os.environ.get("RAILWAY_REVISION",
+                str(int(APP_START_TIME))))
+    return {"version": build_id, "time": datetime.now().isoformat()}
 
 
 def _generate_live_report() -> dict:
@@ -234,17 +246,46 @@ async def get_market():
 
 @app.get("/api/signals")
 async def get_signals():
-    """Letzte Trading-Signale aus dem Trade-Log."""
+    """Letzte Trading-Signale: lokaler Log oder Alpaca Order-History."""
+    # 1) Lokaler trades.json Cache (funktioniert wenn Predictor lokal laeuft)
     log_path = LOGS_DIR / "trades.json"
-    if not log_path.exists():
-        return {"signals": [], "message": "Noch keine Trades aufgezeichnet."}
+    if log_path.exists():
+        try:
+            trades = json.loads(log_path.read_text(encoding="utf-8"))
+            recent = trades[-20:] if len(trades) > 20 else trades
+            return {"signals": list(reversed(recent)), "total": len(trades), "source": "local_log"}
+        except Exception:
+            pass
+
+    # 2) Fallback: echte Orders von Alpaca holen
+    client, paper = _get_alpaca_client()
+    if not client:
+        return {"signals": [], "message": "Noch keine Signale. Alpaca nicht verbunden.", "source": "none"}
     try:
-        trades = json.loads(log_path.read_text(encoding="utf-8"))
-        # Letzte 20
-        recent = trades[-20:] if len(trades) > 20 else trades
-        return {"signals": list(reversed(recent)), "total": len(trades)}
+        from alpaca.trading.requests import GetOrdersRequest
+        from alpaca.trading.enums import QueryOrderStatus
+        req    = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=20)
+        orders = client.get_orders(filter=req)
+        signals = []
+        for o in orders:
+            signals.append({
+                "timestamp":  str(o.submitted_at or o.created_at),
+                "symbol":     o.symbol,
+                "side":       o.side.value if hasattr(o.side, "value") else str(o.side),
+                "qty":        str(o.qty),
+                "status":     o.status.value if hasattr(o.status, "value") else str(o.status),
+                "filled_avg": str(o.filled_avg_price or "-"),
+                "type":       o.type.value if hasattr(o.type, "value") else str(o.type),
+                "source":     "alpaca_order",
+            })
+        return {
+            "signals": signals,
+            "total": len(signals),
+            "source": "alpaca_orders",
+            "mode": "paper" if paper else "live",
+        }
     except Exception as e:
-        raise HTTPException(500, str(e))
+        return {"signals": [], "message": f"Alpaca Order-History: {e}", "source": "error"}
 
 
 @app.get("/api/portfolio")

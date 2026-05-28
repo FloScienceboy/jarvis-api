@@ -1689,7 +1689,17 @@ function showToast(msg, type='') {
 checkHealth();
 setInterval(checkHealth, 30000);
 loadMarket();
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    // Auto-Reload wenn Service Worker neue Version meldet
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data && e.data.type === 'NEW_VERSION') {
+        console.log('[JARVIS] Neue Version verfügbar — lade neu...');
+        window.location.reload();
+      }
+    });
+  }).catch(() => {});
+}
 </script>
 </body>
 </html>
