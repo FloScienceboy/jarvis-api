@@ -23,6 +23,8 @@ from pathlib import Path
 from typing import Optional
 import uuid
 
+import asyncio
+
 import httpx
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
@@ -349,147 +351,231 @@ async def jarvis_chat(req: ChatRequest):
         return {"reply": f"I do apologise, sir — a technical difficulty: {e}"}
 
 
-# ── Flights / Kiwi Tequila ───────────────────────────────────────────────────
+# ── Flights / Aviasales (Travelpayouts) ──────────────────────────────────────
 
-_KIWI_BASE = "https://tequila.kiwi.com/v2/search"
-_KIWI_NO_KEY = "KIWI_API_KEY nicht gesetzt — kostenlos registrieren unter tequila.kiwi.com und Key in Railway Variables eintragen"
+_AV_BASE     = "https://api.travelpayouts.com/aviasales/v3/prices_for_dates"
+_AV_MARKER   = "730327"
+_AV_NO_TOKEN = (
+    "AVIASALES_TOKEN nicht gesetzt — kostenlos registrieren unter "
+    "travelpayouts.com und Token als Railway Variable AVIASALES_TOKEN eintragen"
+)
+
+# IATA → German city name
+_IATA_CITY: dict[str, str] = {
+    "VIE":"Wien","SZG":"Salzburg","LNZ":"Linz","GRZ":"Graz","INN":"Innsbruck",
+    "MUC":"München","FRA":"Frankfurt","BER":"Berlin","HAM":"Hamburg",
+    "DUS":"Düsseldorf","CGN":"Köln","STR":"Stuttgart","NUE":"Nürnberg",
+    "ZRH":"Zürich","GVA":"Genf","BSL":"Basel",
+    "LIS":"Lissabon","OPO":"Porto","FAO":"Faro",
+    "ATH":"Athen","SKG":"Thessaloniki","HER":"Heraklion","RHO":"Rhodos",
+    "CFU":"Korfu","JMK":"Mykonos","KGS":"Kos","CHQ":"Chania","ZTH":"Zakynthos",
+    "BCN":"Barcelona","MAD":"Madrid","AGP":"Málaga","VLC":"Valencia",
+    "SVQ":"Sevilla","PMI":"Mallorca","IBZ":"Ibiza","ALC":"Alicante",
+    "TFS":"Teneriffa","LPA":"Gran Canaria","FUE":"Fuerteventura","ACE":"Lanzarote",
+    "FCO":"Rom","MXP":"Mailand","VCE":"Venedig","BLQ":"Bologna",
+    "NAP":"Neapel","CTA":"Catania","PSA":"Pisa",
+    "CDG":"Paris","ORY":"Paris Orly","NCE":"Nizza","MRS":"Marseille",
+    "TLS":"Toulouse","LYS":"Lyon","NTE":"Nantes","BOD":"Bordeaux",
+    "LHR":"London","LGW":"London Gatwick","STN":"London Stansted",
+    "MAN":"Manchester","EDI":"Edinburgh","BHX":"Birmingham","GLA":"Glasgow",
+    "DUB":"Dublin",
+    "BRU":"Brüssel","AMS":"Amsterdam","EIN":"Eindhoven","RTM":"Rotterdam",
+    "CPH":"Kopenhagen","ARN":"Stockholm","OSL":"Oslo","HEL":"Helsinki",
+    "RIX":"Riga","TLL":"Tallinn","VNO":"Vilnius",
+    "WAW":"Warschau","KRK":"Krakau","PRG":"Prag","BUD":"Budapest","BTS":"Bratislava",
+    "LJU":"Ljubljana","BEG":"Belgrad","DBV":"Dubrovnik","SPU":"Split",
+    "ZAD":"Zadar","TGD":"Podgorica","SOF":"Sofia","OTP":"Bukarest","KBP":"Kiew",
+    "IST":"Istanbul","SAW":"Istanbul Sabiha","AYT":"Antalya","DLM":"Dalaman",
+    "BJV":"Bodrum","ADB":"Izmir","ESB":"Ankara",
+    "TUN":"Tunis","RAK":"Marrakesch","CMN":"Casablanca","AGA":"Agadir",
+    "HRG":"Hurghada","SSH":"Sharm el-Sheikh","CAI":"Kairo",
+    "DXB":"Dubai","DOH":"Doha","AUH":"Abu Dhabi","MCT":"Muskat",
+    "BKK":"Bangkok","SIN":"Singapur","HKG":"Hongkong","NRT":"Tokio",
+    "ICN":"Seoul","JFK":"New York","LAX":"Los Angeles","MIA":"Miami",
+    "ORD":"Chicago","YYZ":"Toronto","SYD":"Sydney","MEL":"Melbourne",
+    "JNB":"Johannesburg","CPT":"Kapstadt",
+}
+
+# IATA → ISO-2 country code (for flag emoji)
+_IATA_ISO2: dict[str, str] = {
+    "VIE":"AT","SZG":"AT","LNZ":"AT","GRZ":"AT","INN":"AT",
+    "MUC":"DE","FRA":"DE","BER":"DE","HAM":"DE","DUS":"DE",
+    "CGN":"DE","STR":"DE","NUE":"DE",
+    "ZRH":"CH","GVA":"CH","BSL":"CH",
+    "LIS":"PT","OPO":"PT","FAO":"PT",
+    "ATH":"GR","SKG":"GR","HER":"GR","RHO":"GR","CFU":"GR",
+    "JMK":"GR","KGS":"GR","CHQ":"GR","ZTH":"GR",
+    "BCN":"ES","MAD":"ES","AGP":"ES","VLC":"ES","SVQ":"ES",
+    "PMI":"ES","IBZ":"ES","ALC":"ES","TFS":"ES","LPA":"ES","FUE":"ES","ACE":"ES",
+    "FCO":"IT","MXP":"IT","VCE":"IT","BLQ":"IT","NAP":"IT","CTA":"IT","PSA":"IT",
+    "CDG":"FR","ORY":"FR","NCE":"FR","MRS":"FR","TLS":"FR","LYS":"FR","NTE":"FR","BOD":"FR",
+    "LHR":"GB","LGW":"GB","STN":"GB","MAN":"GB","EDI":"GB","BHX":"GB","GLA":"GB",
+    "DUB":"IE",
+    "BRU":"BE","AMS":"NL","EIN":"NL","RTM":"NL",
+    "CPH":"DK","ARN":"SE","OSL":"NO","HEL":"FI",
+    "RIX":"LV","TLL":"EE","VNO":"LT",
+    "WAW":"PL","KRK":"PL","PRG":"CZ","BUD":"HU","BTS":"SK",
+    "LJU":"SI","BEG":"RS","DBV":"HR","SPU":"HR","ZAD":"HR",
+    "TGD":"ME","SOF":"BG","OTP":"RO","KBP":"UA",
+    "IST":"TR","SAW":"TR","AYT":"TR","DLM":"TR","BJV":"TR","ADB":"TR","ESB":"TR",
+    "TUN":"TN","RAK":"MA","CMN":"MA","AGA":"MA",
+    "HRG":"EG","SSH":"EG","CAI":"EG",
+    "DXB":"AE","DOH":"QA","AUH":"AE","MCT":"OM",
+    "BKK":"TH","SIN":"SG","HKG":"HK","NRT":"JP","ICN":"KR",
+    "JFK":"US","LAX":"US","MIA":"US","ORD":"US","YYZ":"CA",
+    "SYD":"AU","MEL":"AU","JNB":"ZA","CPT":"ZA",
+}
 
 
-def _country_flag(iso2: str) -> str:
+def _flag(iso2: str) -> str:
     if not iso2 or len(iso2) != 2:
         return "🌍"
     return chr(0x1F1E6 + ord(iso2[0].upper()) - 65) + chr(0x1F1E6 + ord(iso2[1].upper()) - 65)
 
 
-def _unix_to_date(ts: int) -> str:
-    try:
-        return datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d")
-    except Exception:
-        return ""
-
-
-def _parse_kiwi(raw: dict) -> list[dict]:
+def _parse_aviasales(raw: dict, origin_hint: str = "") -> list[dict]:
     out = []
-    for item in raw.get("data") or []:
+    for item in (raw.get("data") or []):
         try:
-            nights = item.get("nightsInDest") or 7
-            dep_ts = item.get("dTime") or 0
-            ret_ts = item.get("dTimeReturn") or (dep_ts + nights * 86400)
-            country = item.get("countryTo") or {}
-            iso2 = country.get("code", "")
-            airlines = item.get("airlines") or []
-            route = item.get("route") or []
-            stops = max(0, len([r for r in route if r.get("flyFrom") != item.get("flyFrom")]) - 1)
+            dep_str  = item.get("departure_at", "")
+            ret_str  = item.get("return_at", "")
+            dep_date = dep_str[:10] if dep_str else ""
+            ret_date = ret_str[:10] if ret_str else ""
+
+            nights = 0
+            if dep_date and ret_date:
+                try:
+                    d1 = datetime.strptime(dep_date, "%Y-%m-%d")
+                    d2 = datetime.strptime(ret_date, "%Y-%m-%d")
+                    nights = max(0, (d2 - d1).days)
+                except Exception:
+                    pass
+
+            link = item.get("link", "")
+            if link:
+                sep    = "&" if "?" in link else "?"
+                av_url = f"https://www.aviasales.com{link}{sep}marker={_AV_MARKER}"
+            else:
+                av_url = f"https://www.aviasales.com/?marker={_AV_MARKER}"
+
+            origin_code = item.get("origin", origin_hint)
+            dest_code   = item.get("destination", "")
             out.append({
-                "origin":       item.get("flyFrom", ""),
-                "origin_name":  item.get("cityFrom", ""),
-                "dest":         item.get("flyTo", ""),
-                "dest_name":    item.get("cityTo", ""),
-                "dest_country": country.get("name", ""),
-                "dest_flag":    _country_flag(iso2),
-                "price":        int(item.get("price") or 0),
-                "departure":    _unix_to_date(dep_ts),
-                "return_date":  _unix_to_date(ret_ts),
-                "nights":       nights,
-                "stops":        stops,
-                "airline":      ", ".join(dict.fromkeys(airlines)) if airlines else "",
-                "deep_link":    item.get("deep_link", "https://www.kiwi.com/de/"),
+                "origin":      origin_code,
+                "origin_name": _IATA_CITY.get(origin_code, origin_code),
+                "dest":        dest_code,
+                "dest_name":   _IATA_CITY.get(dest_code, dest_code),
+                "dest_flag":   _flag(_IATA_ISO2.get(dest_code, "")),
+                "price":       int(item.get("price") or 0),
+                "departure":   dep_date,
+                "return_date": ret_date,
+                "nights":      nights,
+                "stops":       int(item.get("transfers") or 0),
+                "airline":     item.get("airline", ""),
+                "deep_link":   av_url,
             })
         except Exception:
             continue
     return out
 
 
+async def _av_fetch(client: httpx.AsyncClient, token: str, base_params: dict, origin: str) -> list[dict]:
+    """Single origin fetch — called in parallel by deals + map endpoints."""
+    try:
+        r = await client.get(
+            _AV_BASE,
+            params={**base_params, "origin": origin},
+            headers={"X-Access-Token": token},
+        )
+        r.raise_for_status()
+        return _parse_aviasales(r.json(), origin)
+    except Exception as e:
+        logger.warning(f"Aviasales {origin}: {e}")
+        return []
+
+
 @app.get("/api/flights/deals")
 async def flights_deals(origins: str = "VIE,SZG,MUC"):
-    """Günstigste Round-Trip Deals ab VIE/SZG/MUC via Kiwi Tequila."""
-    key = os.environ.get("KIWI_API_KEY", "")
-    if not key:
-        return {"deals": [], "count": 0, "error": _KIWI_NO_KEY}
+    """Günstigste Round-Trip Deals ab VIE/SZG/MUC via Aviasales (Travelpayouts)."""
+    aviasales_token = os.environ.get("AVIASALES_TOKEN", "")
+    if not aviasales_token:
+        return {"deals": [], "count": 0, "error": _AV_NO_TOKEN}
 
-    today = datetime.now()
-    params = {
-        "fly_from": origins, "fly_to": "anywhere",
-        "date_from": today.strftime("%d/%m/%Y"),
-        "date_to": (today + timedelta(days=180)).strftime("%d/%m/%Y"),
-        "flight_type": "round",
-        "nights_in_dst_from": 3, "nights_in_dst_to": 21,
-        "max_stopovers": 2, "curr": "EUR",
-        "sort": "price", "limit": 30, "one_for_city": 1,
-    }
+    origin_list = [o.strip().upper() for o in origins.split(",") if o.strip()]
+    base_params = {"currency": "EUR", "sorting": "price", "limit": 10, "one_way": "false"}
+
     try:
-        async with httpx.AsyncClient(timeout=15.0) as c:
-            r = await c.get(_KIWI_BASE, params=params, headers={"apikey": key})
-            r.raise_for_status()
-        deals = _parse_kiwi(r.json())
-        return {"deals": deals, "count": len(deals)}
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            results = await asyncio.gather(
+                *[_av_fetch(client, aviasales_token, base_params, o) for o in origin_list]
+            )
+        all_deals = sorted([d for chunk in results for d in chunk], key=lambda x: x["price"])
+        return {"deals": all_deals, "count": len(all_deals)}
     except Exception as e:
-        logger.error(f"Kiwi deals: {e}")
-        return {"deals": [], "count": 0, "error": f"Kiwi API Fehler: {e}"}
+        logger.error(f"Aviasales deals: {e}")
+        return {"deals": [], "count": 0, "error": f"Aviasales API Fehler: {e}"}
 
 
 @app.get("/api/flights/search")
 async def flights_search(
     fly_from: str = "VIE",
-    fly_to: str = "anywhere",
-    date_from: str = "",
-    date_to: str = "",
+    fly_to: str = "",
+    date_from: str = "",    # YYYY-MM
+    date_to: str = "",      # YYYY-MM (return month)
     nights_min: int = 3,
     nights_max: int = 14,
     max_stopovers: int = 2,
 ):
-    """Individuelle Flugsuche via Kiwi Tequila."""
-    key = os.environ.get("KIWI_API_KEY", "")
-    if not key:
-        return {"deals": [], "count": 0, "error": _KIWI_NO_KEY}
+    """Individuelle Flugsuche via Aviasales (Travelpayouts)."""
+    aviasales_token = os.environ.get("AVIASALES_TOKEN", "")
+    if not aviasales_token:
+        return {"deals": [], "count": 0, "error": _AV_NO_TOKEN}
 
-    today = datetime.now()
-    params = {
-        "fly_from": fly_from, "fly_to": fly_to,
-        "date_from": date_from or today.strftime("%d/%m/%Y"),
-        "date_to": date_to or (today + timedelta(days=90)).strftime("%d/%m/%Y"),
-        "flight_type": "round",
-        "nights_in_dst_from": nights_min, "nights_in_dst_to": nights_max,
-        "max_stopovers": max_stopovers, "curr": "EUR",
-        "sort": "price", "limit": 30, "one_for_city": 1,
+    params: dict = {
+        "origin":   fly_from.upper(),
+        "currency": "EUR",
+        "sorting":  "price",
+        "limit":    30,
+        "one_way":  "false",
     }
+    if fly_to and fly_to.lower() not in ("anywhere", ""):
+        params["destination"] = fly_to.upper()
+    if date_from:
+        params["departure_at"] = date_from[:7]   # YYYY-MM
+    if date_to:
+        params["return_at"] = date_to[:7]         # YYYY-MM
+
     try:
         async with httpx.AsyncClient(timeout=15.0) as c:
-            r = await c.get(_KIWI_BASE, params=params, headers={"apikey": key})
+            r = await c.get(_AV_BASE, params=params, headers={"X-Access-Token": aviasales_token})
             r.raise_for_status()
-        deals = _parse_kiwi(r.json())
+        deals = _parse_aviasales(r.json(), fly_from)
         return {"deals": deals, "count": len(deals)}
     except Exception as e:
-        logger.error(f"Kiwi search: {e}")
-        return {"deals": [], "count": 0, "error": f"Kiwi API Fehler: {e}"}
+        logger.error(f"Aviasales search: {e}")
+        return {"deals": [], "count": 0, "error": f"Aviasales API Fehler: {e}"}
 
 
 @app.get("/api/flights/map")
 async def flights_map(fly_from: str = "VIE,SZG,MUC"):
-    """Günstigster Flug je Zielstadt für Karten-Arcs."""
-    key = os.environ.get("KIWI_API_KEY", "")
-    if not key:
-        return {"deals": [], "count": 0, "error": _KIWI_NO_KEY}
+    """Günstigster Flug je Zielstadt für Karten-Arcs (Aviasales)."""
+    aviasales_token = os.environ.get("AVIASALES_TOKEN", "")
+    if not aviasales_token:
+        return {"deals": [], "count": 0, "error": _AV_NO_TOKEN}
 
-    today = datetime.now()
-    params = {
-        "fly_from": fly_from, "fly_to": "anywhere",
-        "date_from": today.strftime("%d/%m/%Y"),
-        "date_to": (today + timedelta(days=180)).strftime("%d/%m/%Y"),
-        "flight_type": "round",
-        "nights_in_dst_from": 3, "nights_in_dst_to": 21,
-        "max_stopovers": 2, "curr": "EUR",
-        "sort": "price", "limit": 50, "one_for_city": 1,
-    }
+    origin_list = [o.strip().upper() for o in fly_from.split(",") if o.strip()]
+    base_params = {"currency": "EUR", "sorting": "price", "limit": 20, "one_way": "false"}
+
     try:
-        async with httpx.AsyncClient(timeout=15.0) as c:
-            r = await c.get(_KIWI_BASE, params=params, headers={"apikey": key})
-            r.raise_for_status()
-        deals = _parse_kiwi(r.json())
-        return {"deals": deals, "count": len(deals)}
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            results = await asyncio.gather(
+                *[_av_fetch(client, aviasales_token, base_params, o) for o in origin_list]
+            )
+        all_deals = sorted([d for chunk in results for d in chunk], key=lambda x: x["price"])
+        return {"deals": all_deals, "count": len(all_deals)}
     except Exception as e:
-        logger.error(f"Kiwi map: {e}")
-        return {"deals": [], "count": 0, "error": f"Kiwi API Fehler: {e}"}
+        logger.error(f"Aviasales map: {e}")
+        return {"deals": [], "count": 0, "error": f"Aviasales API Fehler: {e}"}
 
 
 # ── WebSocket ────────────────────────────────────────────────────────────────

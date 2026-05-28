@@ -325,8 +325,8 @@
     .book-sky:hover { background:rgba(0,134,182,0.22); }
     .book-opodo { background:rgba(0,186,67,0.1); border:1px solid rgba(0,186,67,0.3); color:#3dcb6e; }
     .book-opodo:hover { background:rgba(0,186,67,0.22); }
-    .book-kiwi { background:rgba(0,212,255,0.1); border:1px solid rgba(0,212,255,0.3); color:var(--cyan); }
-    .book-kiwi:hover { background:rgba(0,212,255,0.22); }
+    .book-aviasales { background:rgba(0,212,255,0.1); border:1px solid rgba(0,212,255,0.3); color:var(--cyan); }
+    .book-aviasales:hover { background:rgba(0,212,255,0.22); }
 
     .flights-no-key { background:rgba(240,165,0,0.08); border:1px solid rgba(240,165,0,0.35); border-radius:var(--radius); padding:13px 17px; color:var(--gold); font-size:13px; line-height:1.55; }
     .flights-no-key a { color:var(--cyan); text-decoration:none; }
@@ -1475,11 +1475,12 @@ async function searchFlights() {
   const nights   = parseInt(document.getElementById('fl-nights').value);
   const stops    = parseInt(document.getElementById('fl-stops').value);
 
-  const toKiwi = s => s ? s.split('-').reverse().join('/') : '';
+  // Aviasales uses YYYY-MM (month only)
+  const toYM = s => s ? s.slice(0, 7) : '';
 
   const params = new URLSearchParams({
     fly_from: flyFrom, fly_to: flyTo,
-    date_from: toKiwi(rawFrom), date_to: toKiwi(rawTo),
+    date_from: toYM(rawFrom), date_to: toYM(rawTo),
     nights_min: nights, nights_max: Math.min(nights + 7, 21),
     max_stopovers: stops,
   });
@@ -1525,18 +1526,18 @@ function flBookingLinks(deal) {
   const gUrl  = `https://www.google.com/travel/flights?q=Fl%C3%BCge+von+${deal.origin}+nach+${deal.dest}+am+${dep}`;
   const skyUrl = `https://www.skyscanner.de/transport/flights/${deal.origin.toLowerCase()}/${deal.dest.toLowerCase()}/${skyDate}/`;
   const opUrl  = `https://www.opodo.de/flights/search/?adults=1&origin=${deal.origin}&destination=${deal.dest}&departureDate=${dep}&returnDate=${ret}&cabinClass=Economy`;
-  const kUrl   = deal.deep_link || 'https://www.kiwi.com/de/';
+  const avUrl  = deal.deep_link || `https://www.aviasales.com/?marker=730327`;
   return `<a href="${escAttr(gUrl)}"  target="_blank" rel="noopener" class="book-btn book-google">Google</a>
           <a href="${escAttr(skyUrl)}" target="_blank" rel="noopener" class="book-btn book-sky">Skyscanner</a>
           <a href="${escAttr(opUrl)}"  target="_blank" rel="noopener" class="book-btn book-opodo">Opodo</a>
-          <a href="${escAttr(kUrl)}"   target="_blank" rel="noopener" class="book-btn book-kiwi">Kiwi ↗</a>`;
+          <a href="${escAttr(avUrl)}"  target="_blank" rel="noopener" class="book-btn book-aviasales">Aviasales ↗</a>`;
 }
 
 const _FL_MANUAL_LINKS = `<div class="booking-btns" style="justify-content:center;margin-top:16px">
   <a href="https://www.google.com/travel/flights" target="_blank" rel="noopener" class="book-btn book-google">Google Flights</a>
   <a href="https://www.skyscanner.de" target="_blank" rel="noopener" class="book-btn book-sky">Skyscanner</a>
   <a href="https://www.opodo.de" target="_blank" rel="noopener" class="book-btn book-opodo">Opodo</a>
-  <a href="https://www.kiwi.com/de/" target="_blank" rel="noopener" class="book-btn book-kiwi">Kiwi ↗</a>
+  <a href="https://www.aviasales.com/?marker=730327" target="_blank" rel="noopener" class="book-btn book-aviasales">Aviasales ↗</a>
 </div>`;
 
 function showFlightsError(msg) {
@@ -1632,7 +1633,7 @@ function renderFlightArcs(deals) {
     const weight = deal.price === cheapest ? 8 : deal.price < 200 ? 5 : 3;
     const dep = flFmtDate(deal.departure), ret = flFmtDate(deal.return_date);
     const skyDate = (deal.departure || '').replace(/-/g, '').slice(2);
-    const kUrl = deal.deep_link || 'https://www.kiwi.com/de/';
+    const avUrl = deal.deep_link || `https://www.aviasales.com/?marker=730327`;
 
     const popup = `<div style="font-family:'Rajdhani',sans-serif;min-width:220px">
       <div style="font-family:'Orbitron',monospace;font-size:10px;color:${color};letter-spacing:2px;margin-bottom:6px">✈ FLIGHT DEAL</div>
@@ -1642,7 +1643,7 @@ function renderFlightArcs(deals) {
       <br><span style="font-size:12px;color:rgba(200,230,245,0.4)">${escHtml(deal.airline || '')} · ${deal.stops === 0 ? 'Direkt' : deal.stops + ' Stopp'}</span>
       <div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:4px">
         <a href="https://www.skyscanner.de/transport/flights/${deal.origin.toLowerCase()}/${deal.dest.toLowerCase()}/${skyDate}/" target="_blank" style="color:#35b3e0;font-size:11px;border:1px solid rgba(53,179,224,0.4);border-radius:4px;padding:3px 8px;text-decoration:none">Skyscanner</a>
-        <a href="${escAttr(kUrl)}" target="_blank" style="color:#00d4ff;font-size:11px;border:1px solid rgba(0,212,255,0.4);border-radius:4px;padding:3px 8px;text-decoration:none">Kiwi ↗</a>
+        <a href="${escAttr(avUrl)}" target="_blank" style="color:#00d4ff;font-size:11px;border:1px solid rgba(0,212,255,0.4);border-radius:4px;padding:3px 8px;text-decoration:none">Aviasales ↗</a>
       </div>
     </div>`;
 
