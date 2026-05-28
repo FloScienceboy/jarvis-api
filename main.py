@@ -245,134 +245,211 @@ async def get_market():
 
 
 def _generate_live_signals() -> list:
-    """Generiert Predictor-Signale via yfinance (SMA20 + Momentum).
-    Gibt eine leere Liste zurueck wenn yfinance fehlschlaegt — Exception
-    wird nach oben weitergegeben damit der Caller den Fehler loggen kann.
     """
-    import math, traceback
-    PORTFOLIO = [
-        {"symbol": "AAPL",  "yf": "AAPL",    "entry": 145.0},
-        {"symbol": "GOOGL", "yf": "GOOGL",   "entry": 135.0},
-        {"symbol": "MSFT",  "yf": "MSFT",    "entry": 390.0},
-        {"symbol": "BTC",   "yf": "BTC-USD", "entry": 50000.0},
-        {"symbol": "SPY",   "yf": "SPY",     "entry": 440.0},
-    ]
-    import yfinance as yf  # wirft ImportError wenn nicht installiert
+    Generiert Live-Signale via Alpaca Data API (Stocks) + CoinGecko (BTC).
+    Alpaca ist auf Railway garantiert erreichbar (Keys bereits konfiguriert).
+    """
+    import os, datetime, math
+
+    ALPACA_KEY    = os.environ.get("ALPACA_API_KEY", "")
+    ALPACA_SECRET = os.environ.get("ALPACA_SECRET_KEY", "")
+    STOCK_SYMBOLS = ["AAPL", "GOOGL", "MSFT", "SPY"]
     signals = []
-    errors  = []
-    for asset in PORTFOLIO:
+
+    # ── 1) Alpaca Bars für US-Aktien ──────────────────────────────────────────
+    if ALPACA_KEY and ALPACA_SECRET:
         try:
-            t = yf.Ticker(asset["yf"])
-            h = t.history(period="30d")
-            if h.empty or len(h) < 5:
-                errors.append(f"{asset['symbol']}: leere Daten")
-                continue
-            closes = h["Close"].tolist()
-            price  = closes[-1]
-            sma20  = sum(closes[-20:]) / min(len(closes), 20)
-            ret5d  = (closes[-1] / closes[-5] - 1) if len(closes) >= 5 else 0
-            ret1d  = (closes[-1] / closes[-2] - 1) if len(closes) >= 2 else 0
+            from alpaca.data.historical import StockHistoricalDataClient
+            from alpaca.data.requests   import StockBarsRequest
+            from alpaca.data.timeframe  import TimeFrame
 
-            score = 0
-            if price > sma20 * 1.01:  score += 1
-            if ret5d > 0.015:         score += 1
-            if ret1d > 0.005:         score += 1
-            if price < sma20 * 0.99:  score -= 1
-            if ret5d < -0.015:        score -= 1
-            if ret1d < -0.005:        score -= 1
+            client = StockHistoricalDataClient(ALPACA_KEY, ALPACA_SECRET)
+            end_dt   = datetime.datetime.utcnow()
+            start_dt = end_dt - datetime.timedelta(days=35)
 
-            if score >= 2:
-                side, label = "buy",  "KAUFEN"
-            elif score <= -2:
-                side, label = "sell", "VERKAUFEN"
-            else:
-                side, label = ("buy" if ret1d >= 0 else "sell"), "HALTEN"
+            req  = StockBarsRequest(
+                symbol_or_symbols=STOCK_SYMBOLS,
+                timeframe=TimeFrame.Day,
+                start=start_dt,
+                end=end_dt,
+            )
+            bars_data = client.get_stock_bars(req)
 
-            stop   = round(price * 0.96, 2)
-            target = round(price * 1.08, 2)
-            conf   = min(95, max(40, 50 + abs(score) * 15))
+            for sym in STOCK_SYMBOLS:
+                try:
+                    raw = bars_data[sym] if sym in bars_data else []
+                    if not raw or len(raw) < 5:
+                        continue
+                    closes = [float(b.close) for b in raw]
+                    price  = closes[-1]
+                    sma20  = sum(closes[-20:]) / min(len(closes), 20)
+                    ret5d  = (closes[-1] / closes[-5] - 1) if len(closes) >= 5 else 0
+                    ret1d  = (closes[-1] / closes[-2] - 1) if len(closes) >= 2 else 0
 
-            signals.append({
-                "symbol":    asset["symbol"],
-                "side":      side,
-                "action":    label,
-                "price":     round(price, 2),
-                "target":    target,
-                "stop":      stop,
-                "sma20":     round(sma20, 2),
-                "ret_1d":    round(ret1d * 100, 2),
-                "ret_5d":    round(ret5d * 100, 2),
-                "confidence":conf,
-                "strategy":  "SMA20 + Momentum",
-                "timestamp": __import__("datetime").datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "source":    "live_yfinance",
-            })
+                    score = 0
+                    if price > sma20 * 1.01:  score += 1
+                    if ret5d > 0.015:          score += 1
+                    if ret1d > 0.005:          score += 1
+                    if price < sma20 * 0.99:  score -= 1
+                    if ret5d < -0.015:         score -= 1
+                    if ret1d < -0.005:         score -= 1
+
+                    if score >= 2:
+                        side, label = "buy",  "KAUFEN"
+                    elif score <= -2:
+                        side, label = "sell", "VERKAUFEN"
+                    else:
+                        side, label = ("buy" if ret1d >= 0 else "sell"), "HALTEN"
+
+                    signals.append({
+                        "symbol":    sym,
+                        "side":      side,
+                        "action":    label,
+                        "price":     round(price, 2),
+                        "target":    round(price * 1.08, 2),
+                        "stop":      round(price * 0.96, 2),
+                        "sma20":     round(sma20, 2),
+                        "ret_1d":    round(ret1d * 100, 2),
+                        "ret_5d":    round(ret5d * 100, 2),
+                        "confidence":min(95, max(40, 50 + abs(score) * 15)),
+                        "strategy":  "SMA20 + Momentum (Alpaca)",
+                        "timestamp": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "source":    "alpaca_data",
+                    })
+                except Exception:
+                    pass
         except Exception as e:
-            errors.append(f"{asset['symbol']}: {e}")
-    if not signals and errors:
-        raise RuntimeError("yfinance: " + "; ".join(errors))
-    return signals
+            pass  # Alpaca fehlgeschlagen → weiter zu yfinance
 
+    # ── 2) yfinance als Fallback für fehlende Symbole ─────────────────────────
+    found_syms = {s["symbol"] for s in signals}
+    missing    = [s for s in STOCK_SYMBOLS if s not in found_syms]
+    if missing:
+        try:
+            import yfinance as yf
+            for sym in missing:
+                try:
+                    h = yf.Ticker(sym).history(period="30d")
+                    if h.empty or len(h) < 5:
+                        continue
+                    closes = h["Close"].tolist()
+                    price  = closes[-1]
+                    sma20  = sum(closes[-20:]) / min(len(closes), 20)
+                    ret5d  = (closes[-1] / closes[-5] - 1) if len(closes) >= 5 else 0
+                    ret1d  = (closes[-1] / closes[-2] - 1) if len(closes) >= 2 else 0
+                    score  = sum([price > sma20*1.01, ret5d > 0.015, ret1d > 0.005]) - \
+                             sum([price < sma20*0.99, ret5d < -0.015, ret1d < -0.005])
+                    side   = "buy" if score >= 0 else "sell"
+                    signals.append({
+                        "symbol": sym, "side": side,
+                        "action": "KAUFEN" if score >= 2 else ("VERKAUFEN" if score <= -2 else "HALTEN"),
+                        "price": round(price, 2), "target": round(price*1.08, 2),
+                        "stop": round(price*0.96, 2), "sma20": round(sma20, 2),
+                        "ret_1d": round(ret1d*100, 2), "ret_5d": round(ret5d*100, 2),
+                        "confidence": min(95, max(40, 50 + abs(score)*15)),
+                        "strategy": "SMA20 + Momentum (yfinance)",
+                        "timestamp": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "source": "yfinance",
+                    })
+                except Exception:
+                    pass
+        except ImportError:
+            pass
 
-@app.get("/api/signals")
-async def get_signals():
-    """Trading-Signale: Live-Analyse via yfinance (Prio 1), dann Alpaca-Orders."""
-    # 1) Live-Signale via yfinance — immer zuerst
+    # ── 3) BTC via CoinGecko (kein API-Key nötig) ────────────────────────────
     try:
-        signals = _generate_live_signals()
-        if signals:
-            return {"signals": signals, "total": len(signals), "source": "live_yfinance"}
-    except Exception as e:
-        live_error = str(e)
-    else:
-        live_error = "Keine Daten zurueckgegeben"
-
-    # 2) Fallback: Alpaca Order-History (zeigt mindestens was)
-    try:
-        client, paper = _get_alpaca_client()
-        if client:
-            from alpaca.trading.requests import GetOrdersRequest
-            from alpaca.trading.enums import QueryOrderStatus
-            req    = GetOrdersRequest(status=QueryOrderStatus.ALL, limit=20)
-            orders = client.get_orders(filter=req)
-            sigs   = [{
-                "timestamp": str(o.submitted_at or o.created_at),
-                "symbol":    o.symbol,
-                "side":      o.side.value if hasattr(o.side, "value") else str(o.side),
-                "price":     str(o.filled_avg_price or "-"),
-                "strategy":  "Alpaca Order",
-                "source":    "alpaca_order",
-            } for o in orders]
-            if sigs:
-                return {"signals": sigs, "total": len(sigs),
-                        "source": "alpaca_orders",
-                        "warning": f"Live-Analyse nicht verfuegbar: {live_error}"}
+        import httpx
+        r = httpx.get(
+            "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart",
+            params={"vs_currency": "usd", "days": "30", "interval": "daily"},
+            timeout=10,
+        )
+        if r.status_code == 200:
+            prices_raw = r.json().get("prices", [])
+            if len(prices_raw) >= 5:
+                closes = [p[1] for p in prices_raw]
+                price  = closes[-1]
+                sma20  = sum(closes[-20:]) / min(len(closes), 20)
+                ret5d  = (closes[-1] / closes[-5] - 1) if len(closes) >= 5 else 0
+                ret1d  = (closes[-1] / closes[-2] - 1) if len(closes) >= 2 else 0
+                score  = sum([price > sma20*1.01, ret5d > 0.015, ret1d > 0.005]) - \
+                         sum([price < sma20*0.99, ret5d < -0.015, ret1d < -0.005])
+                side   = "buy" if score >= 0 else "sell"
+                signals.append({
+                    "symbol": "BTC", "side": side,
+                    "action": "KAUFEN" if score >= 2 else ("VERKAUFEN" if score <= -2 else "HALTEN"),
+                    "price": round(price, 2), "target": round(price*1.08, 2),
+                    "stop": round(price*0.96, 2), "sma20": round(sma20, 2),
+                    "ret_1d": round(ret1d*100, 2), "ret_5d": round(ret5d*100, 2),
+                    "confidence": min(95, max(40, 50 + abs(score)*15)),
+                    "strategy": "SMA20 + Momentum (CoinGecko)",
+                    "timestamp": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "source": "coingecko",
+                })
     except Exception:
         pass
 
-    # 3) Nichts verfuegbar — klare Fehlermeldung
-    return {"signals": [], "total": 0,
-            "source": "none",
-            "error": f"Live-Signale fehlgeschlagen: {live_error}"}
+    return signals
 
 
 @app.get("/api/debug/signals")
 async def debug_signals():
-    """Debug: testet yfinance direkt — zeigt ob Live-Signale funktionieren."""
-    import sys
-    result = {"python": sys.version, "yfinance_installed": False, "test_ticker": None, "error": None}
+    """Debug: testet alle Datenquellen — zeigt genau was auf Railway funktioniert."""
+    import sys, os
+    result = {
+        "python":          sys.version,
+        "alpaca_key_set":  bool(os.environ.get("ALPACA_API_KEY")),
+        "alpaca_data":     None,
+        "yfinance":        None,
+        "coingecko":       None,
+        "live_signals_count": 0,
+        "live_signals_error": None,
+    }
+    # Test Alpaca Data
+    try:
+        import datetime
+        from alpaca.data.historical import StockHistoricalDataClient
+        from alpaca.data.requests   import StockBarsRequest
+        from alpaca.data.timeframe  import TimeFrame
+        client = StockHistoricalDataClient(
+            os.environ.get("ALPACA_API_KEY",""),
+            os.environ.get("ALPACA_SECRET_KEY",""),
+        )
+        req = StockBarsRequest(
+            symbol_or_symbols="AAPL",
+            timeframe=TimeFrame.Day,
+            start=datetime.datetime.utcnow()-datetime.timedelta(days=10),
+            end=datetime.datetime.utcnow(),
+        )
+        bars = client.get_stock_bars(req)
+        raw  = bars["AAPL"] if "AAPL" in bars else []
+        result["alpaca_data"] = {"ok": True, "bars": len(raw),
+                                  "latest": round(float(raw[-1].close),2) if raw else None}
+    except Exception as e:
+        result["alpaca_data"] = {"ok": False, "error": str(e)}
+    # Test yfinance
     try:
         import yfinance as yf
-        result["yfinance_installed"] = True
-        t = yf.Ticker("AAPL")
-        h = t.history(period="5d")
-        result["test_ticker"] = {
-            "symbol": "AAPL",
-            "rows": len(h),
-            "latest_close": round(float(h["Close"].iloc[-1]), 2) if not h.empty else None,
-        }
+        h = yf.Ticker("AAPL").history(period="5d")
+        result["yfinance"] = {"ok": not h.empty, "rows": len(h),
+                               "latest": round(float(h["Close"].iloc[-1]),2) if not h.empty else None}
     except Exception as e:
-        result["error"] = str(e)
+        result["yfinance"] = {"ok": False, "error": str(e)}
+    # Test CoinGecko
+    try:
+        import httpx
+        r = httpx.get("https://api.coingecko.com/api/v3/simple/price",
+                       params={"ids":"bitcoin","vs_currencies":"usd"}, timeout=8)
+        result["coingecko"] = {"ok": r.status_code==200,
+                                "btc_usd": r.json().get("bitcoin",{}).get("usd") if r.status_code==200 else None}
+    except Exception as e:
+        result["coingecko"] = {"ok": False, "error": str(e)}
+    # Test full signal generation
+    try:
+        sigs = _generate_live_signals()
+        result["live_signals_count"] = len(sigs)
+    except Exception as e:
+        result["live_signals_error"] = str(e)
     return result
 
 
